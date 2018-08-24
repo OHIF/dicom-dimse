@@ -1,0 +1,14 @@
+## Directories
+node_modules
+docs/_book/
+
+## Files
+.npmrc
+docs/api.md
+
+## File Types
+.idea
+
+## Output
+coverage/
+junit.xml
