@@ -1,195 +1,214 @@
-var isString = function(type) {
-    if (type === C.TYPE_ASCII || type === C.TYPE_HEX) {
-        return true;
-    } else {
-        return false;
-    }
+const isString = function (type) {
+  if (type === C.TYPE_ASCII || type === C.TYPE_HEX) {
+    return true;
+  }
+
+  return false;
+
 };
 
-calcLength = function(type, value) {
-    var size = NaN;
-    switch (type) {
-    case C.TYPE_HEX : size = Buffer.byteLength(value, 'hex'); break;
-    case C.TYPE_ASCII : size = Buffer.byteLength(value, 'ascii'); break;
-    case C.TYPE_UINT8 : size = 1; break;
-    case C.TYPE_UINT16 : size = 2; break;
-    case C.TYPE_UINT32 : size = 4; break;
-    case C.TYPE_FLOAT : size = 4; break;
-    case C.TYPE_DOUBLE : size = 8; break;
-    case C.TYPE_INT8 : size = 1; break;
-    case C.TYPE_INT16 : size = 2; break;
-    case C.TYPE_INT32 : size = 4; break;
-    default :break;
-}
-    return size;
+calcLength = function (type, value) {
+  let size = NaN;
+
+  switch (type) {
+  case C.TYPE_HEX : size = Buffer.byteLength(value, 'hex'); break;
+  case C.TYPE_ASCII : size = Buffer.byteLength(value, 'ascii'); break;
+  case C.TYPE_UINT8 : size = 1; break;
+  case C.TYPE_UINT16 : size = 2; break;
+  case C.TYPE_UINT32 : size = 4; break;
+  case C.TYPE_FLOAT : size = 4; break;
+  case C.TYPE_DOUBLE : size = 8; break;
+  case C.TYPE_INT8 : size = 1; break;
+  case C.TYPE_INT16 : size = 2; break;
+  case C.TYPE_INT32 : size = 4; break;
+  default :break;
+  }
+
+  return size;
 };
 
-var RWStream = function() {
-    this.endian = C.BIG_ENDIAN;
+const RWStream = function () {
+  this.endian = C.BIG_ENDIAN;
 };
 
-RWStream.prototype.setEndian = function(endian) {
-    this.endian = endian;
+RWStream.prototype.setEndian = function (endian) {
+  this.endian = endian;
 };
 
-RWStream.prototype.getEncoding = function(type) {
-    return RWStream.encodings[type];
+RWStream.prototype.getEncoding = function (type) {
+  return RWStream.encodings[type];
 };
 
-RWStream.prototype.getWriteType = function(type) {
-    return RWStream.writes[this.endian][type];
+RWStream.prototype.getWriteType = function (type) {
+  return RWStream.writes[this.endian][type];
 };
 
-RWStream.prototype.getReadType = function(type) {
-    return RWStream.reads[this.endian][type];
+RWStream.prototype.getReadType = function (type) {
+  return RWStream.reads[this.endian][type];
 };
 
-WriteStream = function() {
-    RWStream.call(this);
-    this.defaultBufferSize = 512; //512 bytes
-    this.rawBuffer = Buffer.alloc(this.defaultBufferSize);
-    this.offset = 0;
-    this.contentSize = 0;
+WriteStream = function () {
+  RWStream.call(this);
+  this.defaultBufferSize = 512; // 512 bytes
+  this.rawBuffer = Buffer.alloc(this.defaultBufferSize);
+  this.offset = 0;
+  this.contentSize = 0;
 };
 
 util.inherits(WriteStream, RWStream);
 
-WriteStream.prototype.increment = function(add) {
-    this.offset += add;
-    if (this.offset > this.contentSize) {
-        this.contentSize = this.offset;
-    }
+WriteStream.prototype.increment = function (add) {
+  this.offset += add;
+  if (this.offset > this.contentSize) {
+    this.contentSize = this.offset;
+  }
 };
 
-WriteStream.prototype.size = function() {
-    return this.contentSize;
+WriteStream.prototype.size = function () {
+  return this.contentSize;
 };
 
-WriteStream.prototype.skip = function(amount) {
-    this.increment(amount);
+WriteStream.prototype.skip = function (amount) {
+  this.increment(amount);
 };
 
-WriteStream.prototype.checkSize = function(length) {
-    if (this.offset + length > this.rawBuffer.length) {
-        // we need more size, copying old one to new buffer
-        var oldLength = this.rawBuffer.length,
-            newBuffer = Buffer.alloc(oldLength + length + (oldLength / 2));
-        this.rawBuffer.copy(newBuffer, 0, 0, this.contentSize);
-        this.rawBuffer = newBuffer;
-    }
+WriteStream.prototype.checkSize = function (length) {
+  if (this.offset + length > this.rawBuffer.length) {
+    // We need more size, copying old one to new buffer
+    let oldLength = this.rawBuffer.length,
+      newBuffer = Buffer.alloc(oldLength + length + (oldLength / 2));
+
+    this.rawBuffer.copy(newBuffer, 0, 0, this.contentSize);
+    this.rawBuffer = newBuffer;
+  }
 };
 
-WriteStream.prototype.writeToBuffer = function(type, value, length) {
-    if (value === '' || value === null) return;
+WriteStream.prototype.writeToBuffer = function (type, value, length) {
+  if (value === '' || value === null) {
+    return;
+  }
 
-    this.checkSize(length);
-    this.rawBuffer[this.getWriteType(type)](value, this.offset);
-    this.increment(length);
+  this.checkSize(length);
+  this.rawBuffer[this.getWriteType(type)](value, this.offset);
+  this.increment(length);
 };
 
-WriteStream.prototype.writeRawBuffer = function(source, start, length) {
-    if (!source) return;
-    this.checkSize(length);
-    source.copy(this.rawBuffer, this.offset, start, length);
-    this.increment(length);
+WriteStream.prototype.writeRawBuffer = function (source, start, length) {
+  if (!source) {
+    return;
+  }
+  this.checkSize(length);
+  source.copy(this.rawBuffer, this.offset, start, length);
+  this.increment(length);
 };
 
-WriteStream.prototype.write = function(type, value) {
-    if (isString(type)) {
-        this.writeString(value, type);
-    } else {
-        this.writeToBuffer(type, value, calcLength(type));
-    }
+WriteStream.prototype.write = function (type, value) {
+  if (isString(type)) {
+    this.writeString(value, type);
+  } else {
+    this.writeToBuffer(type, value, calcLength(type));
+  }
 };
 
-WriteStream.prototype.writeString = function(string, type) {
-    var encoding = this.getEncoding(type),
-   length = Buffer.byteLength(string, encoding);
-    this.rawBuffer.write(string, this.offset, length, encoding);
-    this.increment(length);
+WriteStream.prototype.writeString = function (string, type) {
+  let encoding = this.getEncoding(type),
+    length = Buffer.byteLength(string, encoding);
+
+  this.rawBuffer.write(string, this.offset, length, encoding);
+  this.increment(length);
 };
 
-WriteStream.prototype.buffer = function() {
-    return this.rawBuffer.slice(0, this.contentSize);
+WriteStream.prototype.buffer = function () {
+  return this.rawBuffer.slice(0, this.contentSize);
 };
 
-WriteStream.prototype.toReadBuffer = function() {
-    return new ReadStream(this.buffer());
+WriteStream.prototype.toReadBuffer = function () {
+  return new ReadStream(this.buffer());
 };
 
-WriteStream.prototype.concat = function(newStream) {
-    var newSize = this.size() + newStream.size();
-    this.rawBuffer = Buffer.concat([this.buffer(), newStream.buffer()], newSize);
-    this.contentSize = newSize;
-    this.offset = newSize;
+WriteStream.prototype.concat = function (newStream) {
+  const newSize = this.size() + newStream.size();
+
+  this.rawBuffer = Buffer.concat([this.buffer(), newStream.buffer()], newSize);
+  this.contentSize = newSize;
+  this.offset = newSize;
 };
 
-ReadStream = function(buffer) {
-    RWStream.call(this);
-    this.rawBuffer = buffer;
-    this.offset = 0;
+ReadStream = function (buffer) {
+  RWStream.call(this);
+  this.rawBuffer = buffer;
+  this.offset = 0;
 };
 
 util.inherits(ReadStream, RWStream);
 
-ReadStream.prototype.size = function() {
-    return this.rawBuffer.length;
+ReadStream.prototype.size = function () {
+  return this.rawBuffer.length;
 };
 
-ReadStream.prototype.increment = function(add) {
-    this.offset += add;
+ReadStream.prototype.increment = function (add) {
+  this.offset += add;
 };
 
-ReadStream.prototype.more = function(length) {
-    var newBuf = this.rawBuffer.slice(this.offset, this.offset + length);
-    this.increment(length);
-    return new ReadStream(newBuf);
+ReadStream.prototype.more = function (length) {
+  const newBuf = this.rawBuffer.slice(this.offset, this.offset + length);
+
+  this.increment(length);
+
+  return new ReadStream(newBuf);
 };
 
-ReadStream.prototype.reset = function() {
-    this.offset = 0;
-    return this;
+ReadStream.prototype.reset = function () {
+  this.offset = 0;
+
+  return this;
 };
 
-ReadStream.prototype.end = function() {
-    return this.offset >= this.size();
+ReadStream.prototype.end = function () {
+  return this.offset >= this.size();
 };
 
-ReadStream.prototype.readFromBuffer = function(type, length) {
-    //this.checkSize(length);
-    //if (this.offset + length > this.rawBuffer.length) throw ("out of bound " + this.offset + "," + length + "," + this.rawBuffer.length);
-    var value = this.rawBuffer[this.getReadType(type)](this.offset);
-    this.increment(length);
-    return value;
+ReadStream.prototype.readFromBuffer = function (type, length) {
+  // This.checkSize(length);
+  // If (this.offset + length > this.rawBuffer.length) throw ("out of bound " + this.offset + "," + length + "," + this.rawBuffer.length);
+  const value = this.rawBuffer[this.getReadType(type)](this.offset);
+
+  this.increment(length);
+
+  return value;
 };
 
-ReadStream.prototype.read = function(type, length) {
-    var value = null;
-    if (isString(type)) {
-        value = this.readString(length, type);
-    } else {
-        value = this.readFromBuffer(type, calcLength(type));
-    }
+ReadStream.prototype.read = function (type, length) {
+  let value = null;
 
-    return value;
+  if (isString(type)) {
+    value = this.readString(length, type);
+  } else {
+    value = this.readFromBuffer(type, calcLength(type));
+  }
+
+  return value;
 };
 
-ReadStream.prototype.readString = function(length, type) {
-    var encoding = this.getEncoding(type),
-        str = this.rawBuffer.toString(encoding, this.offset, this.offset + length);
-    this.increment(length);
-    return str;
+ReadStream.prototype.readString = function (length, type) {
+  let encoding = this.getEncoding(type),
+    str = this.rawBuffer.toString(encoding, this.offset, this.offset + length);
+
+  this.increment(length);
+
+  return str;
 };
 
-ReadStream.prototype.buffer = function() {
-    return this.rawBuffer;
+ReadStream.prototype.buffer = function () {
+  return this.rawBuffer;
 };
 
-ReadStream.prototype.concat = function(newStream) {
-    var newSize = this.size() + newStream.size();
-    this.rawBuffer = Buffer.concat([this.buffer(), newStream.buffer()], newSize);
-    this.contentSize = newSize;
-    this.offset = newSize;
+ReadStream.prototype.concat = function (newStream) {
+  const newSize = this.size() + newStream.size();
+
+  this.rawBuffer = Buffer.concat([this.buffer(), newStream.buffer()], newSize);
+  this.contentSize = newSize;
+  this.offset = newSize;
 };
 
 RWStream.writes = {};
