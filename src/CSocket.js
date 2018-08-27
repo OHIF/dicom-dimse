@@ -1,5 +1,3 @@
-import { OHIF } from 'meteor/ohif:core';
-
 const EventEmitter = Npm.require('events').EventEmitter;
 
 function time () {
@@ -44,7 +42,7 @@ CSocket = function (socket, options) {
   const o = this;
 
   this.socket.on('connect', function () {
-    OHIF.log.info('Connect');
+    console.info('Connect');
     o.ready();
   });
 
@@ -53,17 +51,17 @@ CSocket = function (socket, options) {
   });
 
   this.socket.on('error', function (socketError) {
-    OHIF.log.error('There was an error with DIMSE connection socket.');
-    OHIF.log.error(socketError.stack);
-    OHIF.log.trace();
+    console.error('There was an error with DIMSE connection socket.');
+    console.error(socketError.stack);
+    console.trace();
 
     o.emit('error', new Meteor.Error('server-internal-error', socketError.message));
   });
 
   this.socket.on('timeout', function (socketError) {
-    OHIF.log.error('The connection timed out. The server is not responding.');
-    OHIF.log.error(socketError.stack);
-    OHIF.log.trace();
+    console.error('The connection timed out. The server is not responding.');
+    console.error(socketError.stack);
+    console.trace();
 
     o.emit('error', new Meteor.Error('server-connection-error', socketError.message));
   });
@@ -74,7 +72,7 @@ CSocket = function (socket, options) {
     }
 
     o.connected = false;
-    OHIF.log.info('Connection closed');
+    console.info('Connection closed');
     o.emit('close');
   });
 
@@ -83,7 +81,7 @@ CSocket = function (socket, options) {
   });
 
   this.on('aborted', function (pdu) {
-    OHIF.log.warn(`Association aborted with reason ${pdu.reason}`);
+    console.warn(`Association aborted with reason ${pdu.reason}`);
     this.released();
   });
 
@@ -241,7 +239,7 @@ CSocket.prototype.released = function () {
 };
 
 CSocket.prototype.ready = function () {
-  OHIF.log.info('Connection established');
+  console.info('Connection established');
   this.connected = true;
   this.started = time();
 
@@ -266,7 +264,7 @@ CSocket.prototype.checkIdle = function () {
 };
 
 CSocket.prototype.idleClose = function () {
-  OHIF.log.info('Exceed idle time, closing connection');
+  console.info('Exceed idle time, closing connection');
   this.release();
 };
 
@@ -316,7 +314,7 @@ CSocket.prototype.process = function (data) {
       }
     }
   } else {
-    OHIF.log.info('Data received');
+    console.info('Data received');
     let newData = Buffer.concat([this.receiving, data], this.receiving.length + data.length),
       pduLength = newData.length - 6;
 
@@ -438,7 +436,7 @@ CSocket.prototype.receivedMessage = function (pdv) {
       }
 
       if (msg.failure()) {
-        OHIF.log.info('message failed with status ', msg.getStatus().toString(16));
+        console.info('message failed with status ', msg.getStatus().toString(16));
       }
 
       listener.emit('response', msg);
@@ -498,7 +496,7 @@ CSocket.prototype.receivedMessage = function (pdv) {
           throw 'Where does this c-store came from?';
         }
       } else{
-        OHIF.log.info('move ', moveMessageId);
+        console.info('move ', moveMessageId);
       }
 
       // This.storeResponse(useId, msg);
@@ -559,7 +557,7 @@ CSocket.prototype.sendMessage = function (context, command, dataset) {
 
   msgData.command = command;
   this.messages[messageId] = msgData;
-  OHIF.log.info(`Sending command ${command.typeString()}`);
+  console.info(`Sending command ${command.typeString()}`);
   this.send(pdata);
   if (dataset && typeof dataset === 'object') {
     dataset.setSyntax(syntax);

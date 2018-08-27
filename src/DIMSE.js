@@ -1,5 +1,3 @@
-import { OHIF } from 'meteor/ohif:core';
-
 const Future = Npm.require('fibers/future');
 
 DIMSE = {
@@ -78,11 +76,11 @@ DIMSE.associate = function (contexts, callback, options) {
 
   options = Object.assign(defaults, options);
 
-  OHIF.log.info('Associating...');
+  console.info('Associating...');
 
   const socket = conn.associate(options, function (pdu) {
     // Associated
-    OHIF.log.info('==Associated');
+    console.info('==Associated');
     callback.call(this, null, pdu);
   });
 
@@ -101,8 +99,8 @@ DIMSE.retrievePatients = function (params, options) {
 
   DIMSE.associate([C.SOP_PATIENT_ROOT_FIND], function (error, pdu) {
     if (error) {
-      OHIF.log.error('Could not retrieve patients');
-      OHIF.log.trace();
+      console.error('Could not retrieve patients');
+      console.trace();
 
       return future.return([]);
     }
@@ -144,8 +142,8 @@ DIMSE.retrieveStudies = function (params, options) {
 
   DIMSE.associate([C.SOP_STUDY_ROOT_FIND], function (error, pdu) {
     if (error) {
-      OHIF.log.error('Could not retrieve studies');
-      OHIF.log.trace();
+      console.error('Could not retrieve studies');
+      console.trace();
 
       return future.throw(error);
     }
@@ -234,8 +232,8 @@ DIMSE.retrieveInstancesByStudyOnly = function (studyInstanceUID, params, options
 
   DIMSE.associate([C.SOP_STUDY_ROOT_FIND], function (error, pdu) {
     if (error) {
-      OHIF.log.error('Could not retrieve Instances By Study');
-      OHIF.log.trace();
+      console.error('Could not retrieve Instances By Study');
+      console.trace();
 
       return future.throw(error);
     }
@@ -286,8 +284,8 @@ DIMSE.retrieveSeries = function (studyInstanceUID, params, options) {
 
   DIMSE.associate([C.SOP_STUDY_ROOT_FIND], function (error, pdu) {
     if (error) {
-      OHIF.log.error('Could not retrieve series');
-      OHIF.log.trace();
+      console.error('Could not retrieve series');
+      console.trace();
 
       return future.return([]);
     }
@@ -332,8 +330,8 @@ DIMSE.retrieveInstances = function (studyInstanceUID, seriesInstanceUID, params,
 
   DIMSE.associate([C.SOP_STUDY_ROOT_FIND], function (error, pdu) {
     if (error) {
-      OHIF.log.error('Could not retrieve instances');
-      OHIF.log.trace();
+      console.error('Could not retrieve instances');
+      console.trace();
 
       return future.throw(error);
     }
@@ -371,8 +369,8 @@ DIMSE.storeInstances = function (fileList, callback) {
 DIMSE.moveInstances = function (studyInstanceUID, seriesInstanceUID, sopInstanceUID, sopClassUID, params) {
   DIMSE.associate([C.SOP_STUDY_ROOT_MOVE, sopClassUID], function (error) {
     if (error) {
-      OHIF.log.error('Could not move instances');
-      OHIF.log.trace();
+      console.error('Could not move instances');
+      console.trace();
 
       return;
     }

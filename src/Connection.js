@@ -1,5 +1,4 @@
 import { _ } from 'meteor/underscore';
-import { OHIF } from 'meteor/ohif:core';
 
 // Uses NodeJS 'net'
 // https://nodejs.org/api/net.html
@@ -63,10 +62,10 @@ Connection.prototype.addPeer = function (options) {
     // Start listening
     peer.server = net.createServer();
     peer.server.listen(options.port, options.host, function () {
-      OHIF.log.info('listening on', this.address());
+      console.info('listening on', this.address());
     });
     peer.server.on('error', function (err) {
-      OHIF.log.info('server error', err);
+      console.info('server error', err);
     });
     peer.server.on('connection', (nativeSocket) => {
       // Incoming connections
@@ -93,13 +92,13 @@ Connection.prototype.selectPeer = function (aeTitle) {
 Connection.prototype._sendFile = function (socket, sHandle, file, maxSend, metaLength, list) {
   const fileNameText = typeof file.file === 'string' ? file.file : 'buffer';
 
-  OHIF.log.info(`Sending file ${fileNameText}`);
+  console.info(`Sending file ${fileNameText}`);
   const useContext = socket.getContextByUID(file.context);
   const self = this;
 
   PDU.generatePDatas(useContext.id, file.file, maxSend, null, metaLength, function (err, handle) {
     if (err) {
-      OHIF.log.info('Error while sending file');
+      console.info('Error while sending file');
 
       return;
     }
@@ -126,7 +125,7 @@ Connection.prototype._sendFile = function (socket, sHandle, file, maxSend, metaL
     store.on('response', function (msg) {
       const statusText = msg.getStatus().toString(16);
 
-      OHIF.log.info('STORE reponse with status', statusText);
+      console.info('STORE reponse with status', statusText);
       let error = null;
 
       if (msg.failure()) {
@@ -162,7 +161,7 @@ Connection.prototype.storeInstances = function (fileList) {
         return;
       }
 
-      OHIF.log.info(`Dicom file ${(typeof bufferOrFile === 'string' ? bufferOrFile : 'buffer')} found`);
+      console.info(`Dicom file ${(typeof bufferOrFile === 'string' ? bufferOrFile : 'buffer')} found`);
       lastProcessedMetaLength = metaLength;
       const syntax = metaMessage.getValue(0x00020010);
       const sopClassUID = metaMessage.getValue(0x00020002);
@@ -280,7 +279,7 @@ Connection.prototype.associate = function (options, callback) {
     socket.once('associated', callback);
   }
 
-  OHIF.log.info('Starting Connection...');
+  console.info('Starting Connection...');
 
   socket.setCalledAe(hostAE);
   socket.setCallingAE(sourceAE);
