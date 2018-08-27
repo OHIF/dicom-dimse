@@ -1,5 +1,5 @@
-export default class {
-  constructor () {
-    console.log('DIMSE Constructor');
-  }
-}
+import DIMSE from './DIMSE.js';
+
+export default {
+  DIMSE: new DIMSE()
+};

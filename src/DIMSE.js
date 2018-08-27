@@ -1,6 +1,8 @@
-const Future = Npm.require('fibers/future');
+import Fibers from 'fibers';
+import Connection from './Connection.js';
+import C from './constants.js';
 
-DIMSE = {
+const DIMSE = {
   connection: new Connection({
     vr: {
       split: false
@@ -95,7 +97,7 @@ DIMSE.associate = function (contexts, callback, options) {
 
 DIMSE.retrievePatients = function (params, options) {
   // Var start = new Date();
-  const future = new Future();
+  const future = new Fibers.Future();
 
   DIMSE.associate([C.SOP_PATIENT_ROOT_FIND], function (error, pdu) {
     if (error) {
@@ -138,7 +140,7 @@ DIMSE.retrievePatients = function (params, options) {
 
 DIMSE.retrieveStudies = function (params, options) {
   // Var start = new Date();
-  const future = new Future();
+  const future = new Fibers.Future();
 
   DIMSE.associate([C.SOP_STUDY_ROOT_FIND], function (error, pdu) {
     if (error) {
@@ -228,7 +230,7 @@ DIMSE.retrieveInstancesByStudyOnly = function (studyInstanceUID, params, options
     return [];
   }
 
-  const future = new Future();
+  const future = new Fibers.Future();
 
   DIMSE.associate([C.SOP_STUDY_ROOT_FIND], function (error, pdu) {
     if (error) {
@@ -280,7 +282,7 @@ DIMSE.retrieveInstancesByStudyOnly = function (studyInstanceUID, params, options
 };
 
 DIMSE.retrieveSeries = function (studyInstanceUID, params, options) {
-  const future = new Future();
+  const future = new Fibers.Future();
 
   DIMSE.associate([C.SOP_STUDY_ROOT_FIND], function (error, pdu) {
     if (error) {
@@ -326,7 +328,7 @@ DIMSE.retrieveSeries = function (studyInstanceUID, params, options) {
 };
 
 DIMSE.retrieveInstances = function (studyInstanceUID, seriesInstanceUID, params, options) {
-  const future = new Future();
+  const future = new Fibers.Future();
 
   DIMSE.associate([C.SOP_STUDY_ROOT_FIND], function (error, pdu) {
     if (error) {
@@ -383,4 +385,8 @@ DIMSE.moveInstances = function (studyInstanceUID, seriesInstanceUID, sopInstance
 
     this.moveInstances('OHIFDCM', Object.assign(defaultParams, params));
   });
+};
+
+export default {
+  DIMSE
 };

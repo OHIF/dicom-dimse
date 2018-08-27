@@ -1,4 +1,16 @@
-DicomMessage = function (syntax) {
+import fs from 'fs';
+import util from 'util';
+import C from './constants.js';
+import { quitWithError } from './require.js';
+import { ReadStream } from './RWStream.js';
+import {
+  elementByType,
+  elementKeywordByTag,
+  DataElement,
+  readAElement
+} from './Data.js';
+
+const DicomMessage = function (syntax) {
   this.syntax = syntax ? syntax : null;
   this.type = C.DATA_TYPE_COMMAND;
   this.messageId = C.DEFAULT_MESSAGE_ID;
@@ -375,7 +387,7 @@ DicomMessage.read = function (stream, type, syntax, options) {
     case 0x0001 : message = new CStoreRQ(useSyntax); break;
     case 0x0020 : message = new CFindRQ(useSyntax); break;
     case 0x8001 : message = new CStoreRSP(useSyntax); break;
-    default : throw `Unrecognized command type ${cmdType.toString(16)}`; break;
+    default : throw new Error(`Unrecognized command type ${cmdType.toString(16)}`);
     }
 
     message.setElementPairs(pairs);
@@ -396,7 +408,7 @@ DicomMessage.read = function (stream, type, syntax, options) {
   return message;
 };
 
-DataSetMessage = function (syntax) {
+const DataSetMessage = function (syntax) {
   DicomMessage.call(this, syntax);
   this.type = C.DATA_TYPE_DATA;
 };
@@ -407,14 +419,14 @@ DataSetMessage.prototype.is = function (type) {
   return false;
 };
 
-FileMetaMessage = function (syntax) {
+const FileMetaMessage = function (syntax) {
   DicomMessage.call(this, syntax);
   this.type = null;
 };
 
 util.inherits(FileMetaMessage, DicomMessage);
 
-CommandMessage = function (syntax) {
+const CommandMessage = function (syntax) {
   DicomMessage.call(this, syntax);
   this.type = C.DATA_TYPE_COMMAND;
   this.priority = C.PRIORITY_MEDIUM;
@@ -427,7 +439,7 @@ CommandMessage.prototype.getFields = function () {
   return this.command(CommandMessage.super_.prototype.getFields.call(this));
 };
 
-CommandResponse = function (syntax) {
+const CommandResponse = function (syntax) {
   DicomMessage.call(this, syntax);
   this.type = C.DATA_TYPE_COMMAND;
   this.dataSetPresent = true;
@@ -503,28 +515,28 @@ CommandResponse.prototype.getFields = function () {
   return this.response(CommandResponse.super_.prototype.getFields.call(this));
 };
 
-CFindRSP = function (syntax) {
+const CFindRSP = function (syntax) {
   CommandResponse.call(this, syntax);
   this.commandType = 0x8020;
 };
 
 util.inherits(CFindRSP, CommandResponse);
 
-CGetRSP = function (syntax) {
+const CGetRSP = function (syntax) {
   CommandResponse.call(this, syntax);
   this.commandType = 0x8010;
 };
 
 util.inherits(CGetRSP, CommandResponse);
 
-CMoveRSP = function (syntax) {
+const CMoveRSP = function (syntax) {
   CommandResponse.call(this, syntax);
   this.commandType = 0x8021;
 };
 
 util.inherits(CMoveRSP, CommandResponse);
 
-CFindRQ = function (syntax) {
+const CFindRQ = function (syntax) {
   CommandMessage.call(this, syntax);
   this.commandType = 0x20;
   this.contextUID = C.SOP_STUDY_ROOT_FIND;
@@ -532,7 +544,7 @@ CFindRQ = function (syntax) {
 
 util.inherits(CFindRQ, CommandMessage);
 
-CCancelRQ = function (syntax) {
+const CCancelRQ = function (syntax) {
   CommandResponse.call(this, syntax);
   this.commandType = 0x0fff;
   this.contextUID = null;
@@ -541,7 +553,7 @@ CCancelRQ = function (syntax) {
 
 util.inherits(CCancelRQ, CommandResponse);
 
-CCancelMoveRQ = function (syntax) {
+const CCancelMoveRQ = function (syntax) {
   CommandResponse.call(this, syntax);
   this.commandType = 0x0fff;
   this.contextUID = null;
@@ -550,7 +562,7 @@ CCancelMoveRQ = function (syntax) {
 
 util.inherits(CCancelMoveRQ, CommandResponse);
 
-CMoveRQ = function (syntax, destination) {
+const CMoveRQ = function (syntax, destination) {
   CommandMessage.call(this, syntax);
   this.commandType = 0x21;
   this.contextUID = C.SOP_STUDY_ROOT_MOVE;
@@ -567,7 +579,7 @@ CMoveRQ.prototype.setDestination = function (dest) {
   this.setElement(0x00000600, dest);
 };
 
-CGetRQ = function (syntax) {
+const CGetRQ = function (syntax) {
   CommandMessage.call(this, syntax);
   this.commandType = 0x10;
   this.contextUID = C.SOP_STUDY_ROOT_GET;
@@ -580,7 +592,7 @@ CGetRQ.prototype.setStore = function (cstr) {
   this.store = cstr;
 };
 
-CStoreRQ = function (syntax) {
+const CStoreRQ = function (syntax) {
   CommandMessage.call(this, syntax);
   this.commandType = 0x01;
   this.contextUID = C.SOP_STUDY_ROOT_GET;
@@ -608,7 +620,7 @@ CStoreRQ.prototype.setAffectedSOPClassUID = function (uid) {
   this.setElement(0x00000002, uid);
 };
 
-CStoreRSP = function (syntax) {
+const CStoreRSP = function (syntax) {
   CommandResponse.call(this, syntax);
   this.commandType = 0x8001;
   this.contextUID = C.SOP_STUDY_ROOT_GET;
@@ -623,4 +635,21 @@ CStoreRSP.prototype.setAffectedSOPInstanceUID = function (uid) {
 
 CStoreRSP.prototype.getAffectedSOPInstanceUID = function (uid) {
   return this.getValue(0x00001000);
+};
+
+export {
+  DicomMessage,
+  DataSetMessage,
+  FileMetaMessage,
+  CommandMessage,
+  CommandResponse,
+  CFindRSP,
+  CGetRSP,
+  CMoveRSP,
+  CFindRQ,
+  CCancelRQ,
+  CCancelMoveRQ,
+  CGetRQ,
+  CStoreRQ,
+  CStoreRSP
 };

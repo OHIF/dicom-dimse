@@ -1,4 +1,8 @@
-Field = function (type, value) {
+import util from 'util';
+import C from './constants.js';
+import { calcLength } from './RWStream.js';
+
+const Field = function (type, value) {
   this.type = type;
   this.value = value;
 };
@@ -15,7 +19,7 @@ Field.prototype.isNumeric = function () {
   return false;
 };
 
-BufferField = function (buffer, start, length) {
+const BufferField = function (buffer, start, length) {
   Field.call(this, C.TYPE_BUFFER, buffer);
   this.bufferLength = length;
   this.bufferStart = start;
@@ -31,13 +35,13 @@ BufferField.prototype.write = function (stream) {
   stream.writeRawBuffer(this.value, this.bufferStart, this.bufferLength);
 };
 
-StringField = function (str) {
+const StringField = function (str) {
   Field.call(this, C.TYPE_ASCII, typeof str === 'string' ? str : '');
 };
 
 util.inherits(StringField, Field);
 
-FilledField = function (value, length) {
+const FilledField = function (value, length) {
   Field.call(this, C.TYPE_COMPOSITE, value);
   this.fillLength = length;
 };
@@ -65,20 +69,20 @@ FilledField.prototype.write = function (stream) {
   }
 };
 
-HexField = function (hex) {
+const HexField = function (hex) {
   Field.call(this, C.TYPE_HEX, hex);
 };
 
 util.inherits(HexField, Field);
 
-ReservedField = function (length) {
+const ReservedField = function (length) {
   length = length || 1;
   Field.call(this, C.TYPE_HEX, '00'.repeat(length));
 };
 
 util.inherits(ReservedField, Field);
 
-UInt8Field = function (value) {
+const UInt8Field = function (value) {
   Field.call(this, C.TYPE_UINT8, value);
 };
 
@@ -88,7 +92,7 @@ UInt8Field.prototype.isNumeric = function () {
   return true;
 };
 
-UInt16Field = function (value) {
+const UInt16Field = function (value) {
   Field.call(this, C.TYPE_UINT16, value);
 };
 
@@ -98,7 +102,7 @@ UInt16Field.prototype.isNumeric = function () {
   return true;
 };
 
-UInt32Field = function (value) {
+const UInt32Field = function (value) {
   Field.call(this, C.TYPE_UINT32, value);
 };
 
@@ -108,7 +112,7 @@ UInt32Field.prototype.isNumeric = function () {
   return true;
 };
 
-Int8Field = function (value) {
+const Int8Field = function (value) {
   Field.call(this, C.TYPE_INT8, value);
 };
 
@@ -118,7 +122,7 @@ Int8Field.prototype.isNumeric = function () {
   return true;
 };
 
-Int16Field = function (value) {
+const Int16Field = function (value) {
   Field.call(this, C.TYPE_INT16, value);
 };
 
@@ -128,7 +132,7 @@ Int16Field.prototype.isNumeric = function () {
   return true;
 };
 
-Int32Field = function (value) {
+const Int32Field = function (value) {
   Field.call(this, C.TYPE_INT32, value);
 };
 
@@ -138,7 +142,7 @@ Int32Field.prototype.isNumeric = function () {
   return true;
 };
 
-FloatField = function (value) {
+const FloatField = function (value) {
   Field.call(this, C.TYPE_FLOAT, value);
 };
 
@@ -148,7 +152,7 @@ FloatField.prototype.isNumeric = function () {
   return true;
 };
 
-DoubleField = function (value) {
+const DoubleField = function (value) {
   Field.call(this, C.TYPE_DOUBLE, value);
 };
 
@@ -156,4 +160,20 @@ util.inherits(DoubleField, Field);
 
 DoubleField.prototype.isNumeric = function () {
   return true;
+};
+
+export {
+  BufferField,
+  StringField,
+  FilledField,
+  HexField,
+  ReservedField,
+  UInt8Field,
+  UInt16Field,
+  UInt32Field,
+  Int8Field,
+  Int16Field,
+  Int32Field,
+  FloatField,
+  DoubleField
 };

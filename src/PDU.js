@@ -1,9 +1,25 @@
-PDVHandle = function () {
+import fs from 'fs';
+import util from 'util';
+import { EventEmitter } from 'events';
+import C from './constants.js';
+import { DicomMessage } from './Message.js';
+import {
+  ReservedField,
+  HexField,
+  UInt8Field,
+  UInt16Field,
+  UInt32Field,
+  FilledField,
+  BufferField,
+  StringField } from './Field.js';
+import { WriteStream } from './RWStream.js';
+import { quitWithError } from './require.js';
 
-};
+const PDVHandle = function () {};
+
 util.inherits(PDVHandle, EventEmitter);
 
-PDU = function () {
+const PDU = function () {
   this.fields = [];
   this.lengthBytes = 4;
 };
@@ -12,7 +28,7 @@ PDU.prototype.length = function (fields) {
   let len = 0;
 
   fields.forEach(function (f) {
-    len += !f.getFields ? f.length() : f.length(f.getFields());
+    len += f.getFields ? f.length(f.getFields()) : f.length();
   });
 
   return len;
@@ -40,7 +56,7 @@ PDU.prototype.lengthField = function (fields) {
   } else if (this.lengthBytes == 2) {
     return new UInt16Field(this.length(fields));
   }
-  throw 'Invalid length bytes';
+  throw new Error('Invalid length bytes');
 
 };
 
@@ -97,11 +113,12 @@ PDU.prototype.buffer = function () {
   return this.stream().buffer();
 };
 
-const interpretCommand = function (stream, isLast) {
-  parseDicomMessage(stream);
-};
+// TODO: Seems that we don't use it.
+// const interpretCommand = function (stream, isLast) {
+//   parseDicomMessage(stream);
+// };
 
-mergePDVs = function (pdvs) {
+const mergePDVs = function (pdvs) {
   let merges = [],
     count = pdvs.length,
     i = 0;
@@ -290,7 +307,7 @@ PDU.createByStream = function (stream) {
   case 0x51 : pdu = new MaximumLengthItem(); break;
   case 0x52 : pdu = new ImplementationClassUIDItem(); break;
   case 0x55 : pdu = new ImplementationVersionNameItem(); break;
-  default : throw `Unrecoginized pdu type ${pduType}`; break;
+  default : throw new Error(`Unrecoginized pdu type ${pduType}`);
   }
   if (pdu) {
     pdu.read(stream);
@@ -311,7 +328,7 @@ const nextItemIs = function (stream, pduType) {
   return pduType == nextType;
 };
 
-AssociateRQ = function () {
+const AssociateRQ = function () {
   PDU.call(this);
   this.type = C.ITEM_TYPE_PDU_ASSOCIATE_RQ;
   this.protocolVersion = 1;
@@ -404,7 +421,7 @@ AssociateRQ.prototype.buffer = function () {
   return AssociateRQ.super_.prototype.buffer.call(this);
 };
 
-AssociateAC = function () {
+const AssociateAC = function () {
   AssociateRQ.call(this);
 };
 
@@ -448,7 +465,7 @@ AssociateAC.prototype.getMaxSize = function () {
   return size;
 };
 
-AssociateAbort = function () {
+const AssociateAbort = function () {
   this.type = C.ITEM_TYPE_PDU_AABORT;
   this.source = 1;
   this.reason = 0;
@@ -484,7 +501,7 @@ AssociateAbort.prototype.getFields = function () {
   ]);
 };
 
-ReleaseRQ = function () {
+const ReleaseRQ = function () {
   this.type = C.ITEM_TYPE_PDU_RELEASE_RQ;
   PDU.call(this);
 };
@@ -495,7 +512,7 @@ ReleaseRQ.prototype.getFields = function () {
   return ReleaseRQ.super_.prototype.getFields.call(this, [new ReservedField(4)]);
 };
 
-ReleaseRP = function () {
+const ReleaseRP = function () {
   this.type = C.ITEM_TYPE_PDU_RELEASE_RP;
   PDU.call(this);
 };
@@ -510,11 +527,12 @@ ReleaseRP.prototype.getFields = function () {
   return ReleaseRP.super_.prototype.getFields.call(this, [new ReservedField(4)]);
 };
 
-PDataTF = function () {
+const PDataTF = function () {
   this.type = C.ITEM_TYPE_PDU_PDATA;
   this.presentationDataValueItems = [];
   PDU.call(this);
 };
+
 util.inherits(PDataTF, PDU);
 
 PDataTF.prototype.setPresentationDataValueItems = function (items) {
@@ -540,10 +558,11 @@ PDataTF.prototype.readBytes = function (stream, length) {
   this.setPresentationDataValueItems(pdvs);
 };
 
-Item = function () {
+const Item = function () {
   PDU.call(this);
   this.lengthBytes = 2;
 };
+
 util.inherits(Item, PDU);
 
 Item.prototype.read = function (stream) {
@@ -561,7 +580,7 @@ Item.prototype.getFields = function (fields) {
   return Item.super_.prototype.getFields.call(this, fields);
 };
 
-PresentationDataValueItem = function (context) {
+const PresentationDataValueItem = function (context) {
   this.type = null;
   this.isLast = true;
   this.dataFragment = null;
@@ -571,6 +590,7 @@ PresentationDataValueItem = function (context) {
 
   this.lengthBytes = 4;
 };
+
 util.inherits(PresentationDataValueItem, Item);
 
 PresentationDataValueItem.prototype.setContextId = function (id) {
@@ -616,7 +636,7 @@ PresentationDataValueItem.prototype.getFields = function () {
   return PresentationDataValueItem.super_.prototype.getFields.call(this, fields);
 };
 
-RawDataPDV = function (context, buffer, start, length, isLast) {
+const RawDataPDV = function (context, buffer, start, length, isLast) {
   this.type = null;
   this.isLast = isLast;
   this.dataFragmentBuffer = buffer;
@@ -627,6 +647,7 @@ RawDataPDV = function (context, buffer, start, length, isLast) {
 
   this.lengthBytes = 4;
 };
+
 util.inherits(RawDataPDV, Item);
 
 RawDataPDV.prototype.getFields = function () {
@@ -639,11 +660,12 @@ RawDataPDV.prototype.getFields = function () {
   return RawDataPDV.super_.prototype.getFields.call(this, fields);
 };
 
-ApplicationContextItem = function () {
+const ApplicationContextItem = function () {
   this.type = C.ITEM_TYPE_APPLICATION_CONTEXT;
   this.applicationContextName = C.APPLICATION_CONTEXT_NAME;
   Item.call(this);
 };
+
 util.inherits(ApplicationContextItem, Item);
 
 ApplicationContextItem.prototype.setApplicationContextName = function (name) {
@@ -664,10 +686,11 @@ ApplicationContextItem.prototype.buffer = function () {
   return ApplicationContextItem.super_.prototype.buffer.call(this);
 };
 
-PresentationContextItem = function () {
+const PresentationContextItem = function () {
   this.type = C.ITEM_TYPE_PRESENTATION_CONTEXT;
   Item.call(this);
 };
+
 util.inherits(PresentationContextItem, Item);
 
 PresentationContextItem.prototype.setPresentationContextID = function (id) {
@@ -727,10 +750,11 @@ PresentationContextItem.prototype.buffer = function () {
   return PresentationContextItem.super_.prototype.buffer.call(this);
 };
 
-PresentationContextItemAC = function () {
+const PresentationContextItemAC = function () {
   this.type = C.ITEM_TYPE_PRESENTATION_CONTEXT_AC;
   Item.call(this);
 };
+
 util.inherits(PresentationContextItemAC, PresentationContextItem);
 
 PresentationContextItemAC.prototype.readBytes = function (stream, length) {
@@ -748,10 +772,11 @@ PresentationContextItemAC.prototype.readBytes = function (stream, length) {
   this.setTransferSyntaxesItems([transItem]);
 };
 
-AbstractSyntaxItem = function () {
+const AbstractSyntaxItem = function () {
   this.type = C.ITEM_TYPE_ABSTRACT_CONTEXT;
   Item.call(this);
 };
+
 util.inherits(AbstractSyntaxItem, Item);
 
 AbstractSyntaxItem.prototype.setAbstractSyntaxName = function (name) {
@@ -772,10 +797,11 @@ AbstractSyntaxItem.prototype.readBytes = function (stream, length) {
   this.setAbstractSyntaxName(name);
 };
 
-TransferSyntaxItem = function () {
+const TransferSyntaxItem = function () {
   this.type = C.ITEM_TYPE_TRANSFER_CONTEXT;
   Item.call(this);
 };
+
 util.inherits(TransferSyntaxItem, Item);
 
 TransferSyntaxItem.prototype.setTransferSyntaxName = function (name) {
@@ -796,10 +822,11 @@ TransferSyntaxItem.prototype.buffer = function () {
   return TransferSyntaxItem.super_.prototype.buffer.call(this);
 };
 
-UserInformationItem = function () {
+const UserInformationItem = function () {
   this.type = C.ITEM_TYPE_USER_INFORMATION;
   Item.call(this);
 };
+
 util.inherits(UserInformationItem, Item);
 
 UserInformationItem.prototype.setUserDataItems = function (items) {
@@ -807,12 +834,12 @@ UserInformationItem.prototype.setUserDataItems = function (items) {
 };
 
 UserInformationItem.prototype.readBytes = function (stream, length) {
-  let items = [],
-    pdu = this.load(stream);
+  const items = [];
+  const pdu = this.load(stream);
 
   do {
     items.push(pdu);
-  } while (pdu = this.load(stream));
+  } while (pdu === this.load(stream));
   this.setUserDataItems(items);
 };
 
@@ -830,10 +857,11 @@ UserInformationItem.prototype.buffer = function () {
   return UserInformationItem.super_.prototype.buffer.call(this);
 };
 
-ImplementationClassUIDItem = function () {
+const ImplementationClassUIDItem = function () {
   this.type = C.ITEM_TYPE_IMPLEMENTATION_UID;
   Item.call(this);
 };
+
 util.inherits(ImplementationClassUIDItem, Item);
 
 ImplementationClassUIDItem.prototype.setImplementationClassUID = function (id) {
@@ -854,10 +882,11 @@ ImplementationClassUIDItem.prototype.buffer = function () {
   return ImplementationClassUIDItem.super_.prototype.buffer.call(this);
 };
 
-ImplementationVersionNameItem = function () {
+const ImplementationVersionNameItem = function () {
   this.type = C.ITEM_TYPE_IMPLEMENTATION_VERSION;
   Item.call(this);
 };
+
 util.inherits(ImplementationVersionNameItem, Item);
 
 ImplementationVersionNameItem.prototype.setImplementationVersionName = function (name) {
@@ -878,11 +907,12 @@ ImplementationVersionNameItem.prototype.buffer = function () {
   return ImplementationVersionNameItem.super_.prototype.buffer.call(this);
 };
 
-MaximumLengthItem = function () {
+const MaximumLengthItem = function () {
   this.type = C.ITEM_TYPE_MAXIMUM_LENGTH;
   this.maximumLengthReceived = 32768;
   Item.call(this);
 };
+
 util.inherits(MaximumLengthItem, Item);
 
 MaximumLengthItem.prototype.setMaximumLengthReceived = function (length) {
@@ -903,3 +933,22 @@ MaximumLengthItem.prototype.buffer = function () {
   return MaximumLengthItem.super_.prototype.buffer.call(this);
 };
 
+export {
+  AssociateAC,
+  AssociateRQ,
+  AssociateAbort,
+  ReleaseRQ,
+  ReleaseRP,
+  PDataTF,
+  ApplicationContextItem,
+  PresentationContextItem,
+  PresentationContextItemAC,
+  PresentationDataValueItem,
+  AbstractSyntaxItem,
+  TransferSyntaxItem,
+  UserInformationItem,
+  ImplementationClassUIDItem,
+  ImplementationVersionNameItem,
+  MaximumLengthItem,
+  mergePDVs
+};

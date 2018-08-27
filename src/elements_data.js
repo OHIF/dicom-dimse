@@ -10816,5 +10816,7 @@ const dicomVDict = {
     keyword: 'VariableCoefficientsSDDN' }
 };
 
-DicomElements = { dicomNDict,
-  dicomVDict };
+export { 
+  dicomNDict,
+  dicomVDict
+};

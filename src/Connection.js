@@ -1,11 +1,13 @@
-import { _ } from 'meteor/underscore';
+import _ from 'lodash';
+import net from 'net';
+import util from 'util';
+import C from './constants.js';
+import { EventEmitter } from 'events';
+import CSocket from './CSocket.js';
+import PDU from './PDU.js';
+import { DicomMessage } from './Message.js';
 
-// Uses NodeJS 'net'
-// https://nodejs.org/api/net.html
-const net = Npm.require('net');
-const Socket = net.Socket;
-
-Connection = function (options) {
+const Connection = function (options) {
   EventEmitter.call(this);
   this.options = Object.assign({
     maxPackageSize: C.DEFAULT_MAX_PACKAGE_SIZE,
@@ -83,7 +85,7 @@ Connection.prototype.addPeer = function (options) {
 
 Connection.prototype.selectPeer = function (aeTitle) {
   if (!aeTitle || !this.peers[aeTitle]) {
-    throw 'No such peer';
+    throw new Error('No such peer');
   }
 
   return this.peers[aeTitle];
@@ -191,7 +193,7 @@ Connection.prototype.storeInstances = function (fileList) {
 };
 
 // Starts to send dcm files
-sendProcessedFiles = function (self, contexts, toSend, handle, metaLength) {
+const sendProcessedFiles = function (self, contexts, toSend, handle, metaLength) {
   const useContexts = [];
 
   _.each(contexts, (useSyntaxes, context) => {
@@ -240,7 +242,7 @@ Connection.prototype.allClosed = function () {
   let allClosed = true;
 
   for (const i in this.peers) {
-    if (Object.keys(peers[i].sockets).length > 0) {
+    if (Object.keys(this.peers[i].sockets).length > 0) {
       allClosed = false;
       break;
     }
@@ -271,7 +273,7 @@ Connection.prototype.associate = function (options, callback) {
   }
 
   const peerInfo = this.selectPeer(hostAE);
-  const nativeSocket = new Socket();
+  const nativeSocket = new net.Socket();
 
   const socket = new CSocket(nativeSocket, this.options);
 
@@ -294,7 +296,7 @@ Connection.prototype.associate = function (options, callback) {
     if (options.contexts) {
       socket.setPresentationContexts(options.contexts);
     } else {
-      throw new Meteor.Error('Contexts must be specified');
+      throw new Error('Contexts must be specified');
     }
 
     socket.associate();
@@ -302,3 +304,5 @@ Connection.prototype.associate = function (options, callback) {
 
   return socket;
 };
+
+export default Connection;

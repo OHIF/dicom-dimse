@@ -1,3 +1,20 @@
+import util from 'util';
+import C from './constants.js';
+import {
+  ReservedField,
+  HexField,
+  UInt16Field,
+  UInt32Field,
+  Int16Field,
+  Int32Field,
+  FilledField,
+  FloatField,
+  DoubleField,
+  OtherFloatString,
+  OtherDoubleString,
+  StringField } from './Field.js';
+import { dicomNDict } from './elements_data.js';
+
 function paddingLeft (paddingValue, string) {
   return String(paddingValue + string).slice(-paddingValue.length);
 }
@@ -20,7 +37,7 @@ function fieldsLength (fields) {
   return length;
 }
 
-Tag = function (value) {
+const Tag = function (value) {
   this.value = value;
 };
 
@@ -45,7 +62,7 @@ Tag.prototype.isPixelDataTag = function () {
   return this.is(0x7fe00010);
 };
 
-tagFromNumbers = function (group, element) {
+const tagFromNumbers = function (group, element) {
   return new Tag(((group << 16) | element) >>> 0);
 };
 
@@ -56,7 +73,7 @@ function readTag (stream) {
   return tagFromNumbers(group, element);
 }
 
-parseElements = function (stream, syntax) {
+const parseElements = function (stream, syntax) {
   const pairs = {};
 
   stream.reset();
@@ -71,7 +88,7 @@ parseElements = function (stream, syntax) {
   return pairs;
 };
 
-ValueRepresentation = function (type) {
+const ValueRepresentation = function (type) {
   this.type = type;
   this.multi = false;
 };
@@ -111,12 +128,14 @@ ValueRepresentation.prototype.readNullPaddedString = function (stream, length) {
 
 ValueRepresentation.prototype.getFields = function (fields) {
   let valid = true;
+  let length;
 
   if (this.checkLength) {
     valid = this.checkLength(fields);
   } else if (this.maxCharLength) {
-    var check = this.maxCharLength,
-      length = 0;
+    const check = this.maxCharLength;
+
+    length = 0;
 
     fields.forEach(function (field) {
       if (typeof field.value === 'string') {
@@ -125,8 +144,9 @@ ValueRepresentation.prototype.getFields = function (fields) {
     });
     valid = length <= check;
   } else if (this.maxLength) {
-    var check = this.maxLength,
-      length = fieldsLength(fields);
+    const check = this.maxLength;
+
+    length = fieldsLength(fields);
 
     valid = length <= check;
   }
@@ -136,7 +156,7 @@ ValueRepresentation.prototype.getFields = function (fields) {
   }
 
   // Check for odd
-  var length = fieldsLength(fields);
+  length = fieldsLength(fields);
 
   if (length & 1) {
     fields.push(new HexField(this.padByte));
@@ -151,7 +171,7 @@ ValueRepresentation.prototype.getFields = function (fields) {
   return fields;
 };
 
-ApplicationEntity = function () {
+const ApplicationEntity = function () {
   ValueRepresentation.call(this, 'AE');
   this.maxLength = 16;
   this.padByte = '20';
@@ -167,7 +187,7 @@ ApplicationEntity.prototype.getFields = function (value) {
   return ApplicationEntity.super_.prototype.getFields.call(this, [new FilledField(value, 16)]);
 };
 
-CodeString = function () {
+const CodeString = function () {
   ValueRepresentation.call(this, 'CS');
   this.maxLength = 16;
   this.padByte = '20';
@@ -185,7 +205,7 @@ CodeString.prototype.getFields = function (value) {
   return CodeString.super_.prototype.getFields.call(this, [new StringField(value)]);
 };
 
-AgeString = function () {
+const AgeString = function () {
   ValueRepresentation.call(this, 'AS');
   this.maxLength = 4;
   this.padByte = '20';
@@ -215,7 +235,7 @@ AgeString.prototype.getFields = function (value) {
   return AgeString.super_.prototype.getFields.call(this, [new StringField(str)]);
 };
 
-AttributeTag = function () {
+const AttributeTag = function () {
   ValueRepresentation.call(this, 'AT');
   this.maxLength = 4;
   this.padByte = '00';
@@ -239,7 +259,7 @@ AttributeTag.prototype.getFields = function (value) {
   return AttributeTag.super_.prototype.getFields.call(this, [new UInt16Field(value.group()), new UInt16Field(value.element())]);
 };
 
-DateValue = function () {
+const DateValue = function () {
   ValueRepresentation.call(this, 'DA');
   this.maxLength = 8;
   this.padByte = '20';
@@ -279,7 +299,7 @@ DateValue.prototype.getFields = function (date) {
   return DateValue.super_.prototype.getFields.call(this, [new StringField(str)]);
 };
 
-DecimalString = function () {
+const DecimalString = function () {
   ValueRepresentation.call(this, 'DS');
   this.maxLength = 16;
   this.padByte = '20';
@@ -299,7 +319,7 @@ DecimalString.prototype.getFields = function (value) {
   return DecimalString.super_.prototype.getFields.call(this, [new StringField(isNaN(f) ? '' : f.toExponential())]);
 };
 
-DateTime = function () {
+const DateTime = function () {
   ValueRepresentation.call(this, 'DT');
   this.maxLength = 26;
   this.padByte = '20';
@@ -323,7 +343,7 @@ DateTime.prototype.getFields = function (value) {
   return DateTime.super_.prototype.getFields.call(this, [new StringField(`${year + month + day + hour + minute + second}.${millisecond}+0000`)]);
 };
 
-FloatingPointSingle = function () {
+const FloatingPointSingle = function () {
   ValueRepresentation.call(this, 'FL');
   this.maxLength = 4;
   this.padByte = '00';
@@ -341,7 +361,7 @@ FloatingPointSingle.prototype.getFields = function (value) {
   return FloatingPointSingle.super_.prototype.getFields.call(this, [new FloatField(value)]);
 };
 
-FloatingPointDouble = function () {
+const FloatingPointDouble = function () {
   ValueRepresentation.call(this, 'FD');
   this.maxLength = 8;
   this.padByte = '00';
@@ -359,7 +379,7 @@ FloatingPointDouble.prototype.getFields = function (value) {
   return FloatingPointDouble.super_.prototype.getFields.call(this, [new DoubleField(value)]);
 };
 
-IntegerString = function () {
+const IntegerString = function () {
   ValueRepresentation.call(this, 'IS');
   this.maxLength = 12;
   this.padByte = '20';
@@ -377,7 +397,7 @@ IntegerString.prototype.getFields = function (value) {
   return IntegerString.super_.prototype.getFields.call(this, [new StringField(value.toString())]);
 };
 
-LongString = function () {
+const LongString = function () {
   ValueRepresentation.call(this, 'LO');
   this.maxCharLength = 64;
   this.padByte = '20';
@@ -395,7 +415,7 @@ LongString.prototype.getFields = function (value) {
   return LongString.super_.prototype.getFields.call(this, [new StringField(value ? value : '')]);
 };
 
-LongText = function () {
+const LongText = function () {
   ValueRepresentation.call(this, 'LT');
   this.maxCharLength = 10240;
   this.padByte = '20';
@@ -413,7 +433,7 @@ LongText.prototype.getFields = function (value) {
   return LongText.super_.prototype.getFields.call(this, [new StringField(value)]);
 };
 
-PersonName = function () {
+const PersonName = function () {
   ValueRepresentation.call(this, 'PN');
   this.maxLength = null;
   this.padByte = '20';
@@ -461,7 +481,7 @@ PersonName.prototype.getFields = function (value) {
   return PersonName.super_.prototype.getFields.call(this, [new StringField(str)]);
 };
 
-ShortString = function () {
+const ShortString = function () {
   ValueRepresentation.call(this, 'SH');
   this.maxCharLength = 16;
   this.padByte = '20';
@@ -479,7 +499,7 @@ ShortString.prototype.getFields = function (value) {
   return ShortString.super_.prototype.getFields.call(this, [new StringField(value)]);
 };
 
-SignedLong = function () {
+const SignedLong = function () {
   ValueRepresentation.call(this, 'SL');
   this.maxLength = 4;
   this.padByte = '00';
@@ -497,7 +517,7 @@ SignedLong.prototype.getFields = function (value) {
   return SignedLong.super_.prototype.getFields.call(this, [new Int32Field(value)]);
 };
 
-SequenceOfItems = function () {
+const SequenceOfItems = function () {
   ValueRepresentation.call(this, 'SQ');
   this.maxLength = null;
   this.padByte = '00';
@@ -612,7 +632,7 @@ SequenceOfItems.prototype.getFields = function (value, syntax) {
   return SequenceOfItems.super_.prototype.getFields.call(this, fields);
 };
 
-SignedShort = function () {
+const SignedShort = function () {
   ValueRepresentation.call(this, 'SS');
   this.maxLength = 2;
   this.padByte = '00';
@@ -630,7 +650,7 @@ SignedShort.prototype.getFields = function (value) {
   return SignedShort.super_.prototype.getFields.call(this, [new Int16Field(value)]);
 };
 
-ShortText = function () {
+const ShortText = function () {
   ValueRepresentation.call(this, 'ST');
   this.maxCharLength = 1024;
   this.padByte = '20';
@@ -648,7 +668,7 @@ ShortText.prototype.getFields = function (value) {
   return ShortText.super_.prototype.getFields.call(this, [new StringField(value)]);
 };
 
-TimeValue = function () {
+const TimeValue = function () {
   ValueRepresentation.call(this, 'TM');
   this.maxLength = 14;
   this.padByte = '20';
@@ -675,7 +695,7 @@ TimeValue.prototype.getFields = function (date) {
   return TimeValue.super_.prototype.getFields.call(this, [new StringField(dateStr)]);
 };
 
-UnlimitedCharacters = function () {
+const UnlimitedCharacters = function () {
   ValueRepresentation.call(this, 'UC');
   this.maxLength = null;
   this.multi = true;
@@ -692,7 +712,7 @@ UnlimitedCharacters.prototype.getFields = function (value) {
   return UnlimitedCharacters.super_.prototype.getFields.call(this, [new StringField(value)]);
 };
 
-UnlimitedText = function () {
+const UnlimitedText = function () {
   ValueRepresentation.call(this, 'UT');
   this.maxLength = null;
   this.padByte = '20';
@@ -708,7 +728,7 @@ UnlimitedText.prototype.getFields = function (value) {
   return UnlimitedText.super_.prototype.getFields.call(this, [new StringField(value)]);
 };
 
-UnsignedShort = function () {
+const UnsignedShort = function () {
   ValueRepresentation.call(this, 'US');
   this.maxLength = 2;
   this.padByte = '00';
@@ -726,7 +746,7 @@ UnsignedShort.prototype.getFields = function (value) {
   return UnsignedShort.super_.prototype.getFields.call(this, [new UInt16Field(value)]);
 };
 
-UnsignedLong = function () {
+const UnsignedLong = function () {
   ValueRepresentation.call(this, 'UL');
   this.maxLength = 4;
   this.padByte = '00';
@@ -744,7 +764,7 @@ UnsignedLong.prototype.getFields = function (value) {
   return UnsignedLong.super_.prototype.getFields.call(this, [new UInt32Field(value)]);
 };
 
-UniqueIdentifier = function () {
+const UniqueIdentifier = function () {
   ValueRepresentation.call(this, 'UI');
   this.maxLength = 64;
   this.padByte = '00';
@@ -760,7 +780,7 @@ UniqueIdentifier.prototype.getFields = function (value) {
   return UniqueIdentifier.super_.prototype.getFields.call(this, [new StringField(value)]);
 };
 
-UniversalResource = function () {
+const UniversalResource = function () {
   ValueRepresentation.call(this, 'UR');
   this.maxLength = null;
   this.padByte = '20';
@@ -776,7 +796,7 @@ UniversalResource.prototype.getFields = function (value) {
   return UniversalResource.super_.prototype.getFields.call(this, [new StringField(value)]);
 };
 
-UnknownValue = function () {
+const UnknownValue = function () {
   ValueRepresentation.call(this, 'UN');
   this.maxLength = null;
   this.padByte = '00';
@@ -792,7 +812,7 @@ UnknownValue.prototype.getFields = function (value) {
   return UnknownValue.super_.prototype.getFields.call(this, [new StringField(value)]);
 };
 
-OtherWordString = function () {
+const OtherWordString = function () {
   ValueRepresentation.call(this, 'OW');
   this.maxLength = null;
   this.padByte = '00';
@@ -808,7 +828,7 @@ OtherWordString.prototype.getFields = function (value) {
   return OtherWordString.super_.prototype.getFields.call(this, [new StringField(value)]);
 };
 
-OtherByteString = function () {
+const OtherByteString = function () {
   ValueRepresentation.call(this, 'OB');
   this.maxLength = null;
   this.padByte = '00';
@@ -824,9 +844,9 @@ OtherByteString.prototype.getFields = function (value) {
   return OtherByteString.super_.prototype.getFields.call(this, [new HexField(value)]);
 };
 
-elementByType = function (type, value, syntax) {
+const elementByType = function (type, value, syntax) {
   let elem = null,
-    nk = DicomElements.dicomNDict[type];
+    nk = dicomNDict[type];
 
   if (nk) {
     if (nk.vr === 'SQ') {
@@ -854,8 +874,8 @@ elementByType = function (type, value, syntax) {
   return elem;
 };
 
-elementDataByTag = function (tag) {
-  const nk = DicomElements.dicomNDict[tag];
+const elementDataByTag = function (tag) {
+  const nk = dicomNDict[tag];
 
   if (nk) {
     return nk;
@@ -864,7 +884,7 @@ elementDataByTag = function (tag) {
   throw (`Unrecognized tag ${(tag >>> 0).toString(16)}`);
 };
 
-elementKeywordByTag = function (tag) {
+const elementKeywordByTag = function (tag) {
   try {
     const nk = elementDataByTag(tag);
 
@@ -874,7 +894,7 @@ elementKeywordByTag = function (tag) {
   }
 };
 
-vrByType = function (type) {
+const vrByType = function (type) {
   let vr = null;
 
   if (type === 'AE') {
@@ -944,7 +964,7 @@ vrByType = function (type) {
   return vr;
 };
 
-readElements = function (stream, syntax) {
+const readElements = function (stream, syntax) {
   if (stream.end()) {
     return false;
   }
@@ -961,7 +981,7 @@ readElements = function (stream, syntax) {
   stream.setEndian(oldEndian);
 };
 
-readAElement = function (stream, syntax) {
+const readAElement = function (stream, syntax) {
   const elem = newElementWithSyntax(syntax);
 
   elem.readBytes(stream);
@@ -969,7 +989,7 @@ readAElement = function (stream, syntax) {
   return elem;
 };
 
-newElementWithSyntax = function (syntax) {
+const newElementWithSyntax = function (syntax) {
   const elem = new DataElement();
 
   elem.setSyntax(syntax);
@@ -977,10 +997,10 @@ newElementWithSyntax = function (syntax) {
   return elem;
 };
 
-let explicitVRList = ['OB', 'OW', 'OF', 'SQ', 'UC', 'UR', 'UT', 'UN'],
-  binaryVRs = ['FL', 'FD', 'SL', 'SS', 'UL', 'US'];
+const explicitVRList = ['OB', 'OW', 'OF', 'SQ', 'UC', 'UR', 'UT', 'UN'];
+const binaryVRs = ['FL', 'FD', 'SL', 'SS', 'UL', 'US'];
 
-DataElement = function (tag, vr, vm, value, vvr, syntax, options) {
+const DataElement = function (tag, vr, vm, value, vvr, syntax, options) {
   this.vr = vr ? vrByType(vr) : null;
   this.tag = !vvr ? new Tag(tag) : tag;
   this.value = value;

@@ -1,3 +1,6 @@
+import util from 'util';
+import C from './constants.js';
+
 const isString = function (type) {
   if (type === C.TYPE_ASCII || type === C.TYPE_HEX) {
     return true;
@@ -7,7 +10,7 @@ const isString = function (type) {
 
 };
 
-calcLength = function (type, value) {
+const calcLength = function (type, value) {
   let size = NaN;
 
   switch (type) {
@@ -47,7 +50,7 @@ RWStream.prototype.getReadType = function (type) {
   return RWStream.reads[this.endian][type];
 };
 
-WriteStream = function () {
+const WriteStream = function () {
   RWStream.call(this);
   this.defaultBufferSize = 512; // 512 bytes
   this.rawBuffer = Buffer.alloc(this.defaultBufferSize);
@@ -134,7 +137,7 @@ WriteStream.prototype.concat = function (newStream) {
   this.offset = newSize;
 };
 
-ReadStream = function (buffer) {
+const ReadStream = function (buffer) {
   RWStream.call(this);
   this.rawBuffer = buffer;
   this.offset = 0;
@@ -256,3 +259,9 @@ RWStream.reads[C.LITTLE_ENDIAN][C.TYPE_DOUBLE] = 'readDoubleLE';
 RWStream.encodings = {};
 RWStream.encodings[C.TYPE_HEX] = 'hex';
 RWStream.encodings[C.TYPE_ASCII] = 'ascii';
+
+export  {
+  calcLength,
+  ReadStream,
+  WriteStream
+};

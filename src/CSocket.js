@@ -1,4 +1,30 @@
-const EventEmitter = Npm.require('events').EventEmitter;
+import util from 'util';
+import { EventEmitter } from 'events';
+import C from './constants.js';
+import {
+  PDU,
+  AssociateAC,
+  AssociateRQ,
+  ReleaseRQ,
+  PDataTF,
+  ApplicationContextItem,
+  PresentationContextItem,
+  PresentationDataValueItem,
+  AbstractSyntaxItem,
+  TransferSyntaxItem,
+  UserInformationItem,
+  ImplementationClassUIDItem,
+  ImplementationVersionNameItem,
+  MaximumLengthItem
+} from './PDU.js';
+import { ReadStream } from './RWStream.js';
+import {
+  DataSetMessage,
+  DicomMessage,
+  CCancelRQ,
+  CFindRQ,
+  CMoveRQ,
+  CStoreRQ } from './Message.js';
 
 function time () {
   return Math.floor(Date.now() / 1000);
@@ -16,7 +42,7 @@ const Envelope = function (command, dataset) {
 
 util.inherits(Envelope, EventEmitter);
 
-CSocket = function (socket, options) {
+const CSocket = function (socket, options) {
   EventEmitter.call(this);
   this.socket = socket;
   this.negotiatedContexts = {};
@@ -55,7 +81,7 @@ CSocket = function (socket, options) {
     console.error(socketError.stack);
     console.trace();
 
-    o.emit('error', new Meteor.Error('server-internal-error', socketError.message));
+    o.emit('error', new Error('server-internal-error', socketError.message));
   });
 
   this.socket.on('timeout', function (socketError) {
@@ -63,7 +89,7 @@ CSocket = function (socket, options) {
     console.error(socketError.stack);
     console.trace();
 
-    o.emit('error', new Meteor.Error('server-connection-error', socketError.message));
+    o.emit('error', new Error('server-connection-error', socketError.message));
   });
 
   this.socket.on('close', function () {
@@ -321,7 +347,7 @@ CSocket.prototype.process = function (data) {
     if (pduLength < this.receiveLength) {
       this.receiving = newData;
     } else {
-      var remaining = null;
+      let remaining = null;
 
       if (pduLength > this.receiveLength) {
         remaining = newData.slice(this.receiveLength + 6, pduLength + 6);
@@ -472,7 +498,7 @@ CSocket.prototype.receivedMessage = function (pdv) {
     }
 
     if (this.lastCommand.isResponse()) {
-      var replyId = this.lastCommand.respondedTo();
+      const replyId = this.lastCommand.respondedTo();
 
       if (this.messages[replyId].listener) {
         const flag = Boolean(this.lastCommand.failure());
@@ -698,3 +724,5 @@ CSocket.prototype.findInstances = function (params, options) {
 
   return this.find(sendParams, options);
 };
+
+export default CSocket;
