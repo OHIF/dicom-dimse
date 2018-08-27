@@ -213,7 +213,7 @@ PDU.generatePDatas = function (context, bufferOrFile, maxSize, length, metaLengt
         return quitWithError(err, callback);
       } callback(null, handler);
 
-      var after = function (err, bytesRead, buffer, slice) {
+      const after = function (err, bytesRead, buffer, slice) {
         if (err) {
           fs.closeSync(fd);
           handler.emit('error', err);

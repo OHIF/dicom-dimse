@@ -325,8 +325,8 @@ CSocket.prototype.process = function (data) {
       this.receiving = data;
       this.receiveLength = len;
     } else {
-      var process = data,
-        remaining = null;
+      let process = data;
+      let remaining = null;
 
       if (len < cmp) {
         process = data.slice(0, len + 6);
@@ -447,15 +447,15 @@ CSocket.prototype.interpret = function (stream) {
 };
 
 CSocket.prototype.receivedMessage = function (pdv) {
-  let syntax = this.getSyntax(pdv.contextId),
-    msg = DicomMessage.read(pdv.messageStream, pdv.type, syntax, this.options.vr);
+  const syntax = this.getSyntax(pdv.contextId);
+  const msg = DicomMessage.read(pdv.messageStream, pdv.type, syntax, this.options.vr);
 
   if (msg.isCommand()) {
     this.lastCommand = msg;
 
     if (msg.isResponse()) {
-      var replyId = msg.respondedTo(),
-        listener = this.messages[replyId].listener;
+      const replyId = msg.respondedTo();
+      const listener = this.messages[replyId].listener;
 
       if (msg.is(C.COMMAND_C_GET_RSP) || msg.is(C.COMMAND_C_MOVE_RSP)) {
         // Console.log('remaining', msg.getNumOfRemainingSubOperations(), msg.getNumOfCompletedSubOperations());

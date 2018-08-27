@@ -96,7 +96,7 @@ DIMSE.associate = function (contexts, callback, options) {
 };
 
 DIMSE.retrievePatients = function (params, options) {
-  // Var start = new Date();
+
   const future = new Fibers.Future();
 
   DIMSE.associate([C.SOP_PATIENT_ROOT_FIND], function (error, pdu) {
@@ -130,7 +130,7 @@ DIMSE.retrievePatients = function (params, options) {
     });
 
     this.on('close', function () {
-      // Var time = new Date() - start;console.log(time + 'ms taken');
+      // Time = new Date() - start;console.log(time + 'ms taken');
       future.return(patients);
     });
   }, options);
@@ -139,7 +139,7 @@ DIMSE.retrievePatients = function (params, options) {
 };
 
 DIMSE.retrieveStudies = function (params, options) {
-  // Var start = new Date();
+  // Start = new Date();
   const future = new Fibers.Future();
 
   DIMSE.associate([C.SOP_STUDY_ROOT_FIND], function (error, pdu) {
@@ -177,7 +177,7 @@ DIMSE.retrieveStudies = function (params, options) {
     });
 
     this.on('close', function () {
-      // Var time = new Date() - start;console.log(time + 'ms taken');
+      // Time = new Date() - start;console.log(time + 'ms taken');
       future.return(studies);
     });
   }, options);

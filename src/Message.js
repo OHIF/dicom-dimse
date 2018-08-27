@@ -182,7 +182,7 @@ DicomMessage.prototype.printElements = function (pairs, indent) {
 
     typeName += `${(' '.repeat(indent)) + this.key(tag)} : `;
     if (value instanceof Array) {
-      var o = this;
+      const o = this;
 
       value.forEach(function (p) {
         if (typeof p === 'object') {
@@ -238,7 +238,7 @@ DicomMessage.prototype.walkObject = function (pairs) {
     o = this;
 
   for (const tag in pairs) {
-    var v = pairs[tag].getValue(),
+    const v = pairs[tag].getValue(),
       u = v;
 
     if (v instanceof Array) {
