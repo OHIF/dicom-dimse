@@ -16,6 +16,8 @@
     "url": "https://github.com/OHIF/DIMSE.git"
   },
   "scripts": {
+    "build": "npm run test:unit && npm run version && npm run webpack",
+    "build:dev": "npm run test:unit && npm run webpack:dev",
     "docs": "npm run docs:api && cd docs && gitbook install && gitbook serve",
     "docs:api": "npm run clean:apidocs && documentation build src/index.js -f md -o docs/api.md",
     "docs:deploy": "bash ./build/update-docs.sh",
@@ -24,18 +26,21 @@
     "eslint-fix": "eslint -c .eslintrc.js --fix src",
     "test": "jest \\.test\\.js$",
     "test:ci": "npm run test -- --coverage --coverageReporters=text-lcov | coveralls",
+    "watch": "npm run webpack:watch",
+    "start": "npm run webpack",
+    "webpack": "webpack --progress --config ./webpack.config.js",
+    "webpack:watch": "webpack --progress --debug --watch  --config ./webpack.config.js",
     "version": "node -p -e \"'export default \\'' + require('./package.json').version + '\\';'\" > src/version.js"
   },
   "devDependencies": {
     "coveralls": "^3.0.2",
     "documentation": "^7.1.0",
-    "eslint": "^4.19.1",
-    "eslint-loader": "^2.0.0",
-    "eslint-plugin-import": "^2.12.0",
     "fibers": "^3.0.0",
     "jest": "^23.4.0",
     "jest-junit": "^5.1.0",
-    "lodash": "^4.17.10"
+    "lodash": "^4.17.10",
+    "webpack": "^4.9.1",
+    "webpack-cli": "^2.1.4"
   },
   "jest": {
     "verbose": true,
