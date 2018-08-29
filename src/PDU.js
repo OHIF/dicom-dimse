@@ -114,8 +114,8 @@ PDU.prototype.buffer = function () {
 };
 
 // TODO: Seems that we don't use it.
-// const interpretCommand = function (stream, isLast) {
-//   parseDicomMessage(stream);
+// Const interpretCommand = function (stream, isLast) {
+//   ParseDicomMessage(stream);
 // };
 
 const mergePDVs = function (pdvs) {
@@ -934,6 +934,7 @@ MaximumLengthItem.prototype.buffer = function () {
 };
 
 export {
+  PDU,
   AssociateAC,
   AssociateRQ,
   AssociateAbort,

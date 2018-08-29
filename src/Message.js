@@ -234,12 +234,12 @@ DicomMessage.prototype.toString = function () {
 };
 
 DicomMessage.prototype.walkObject = function (pairs) {
-  let obj = {},
-    o = this;
+  const obj = {};
+  const o = this;
 
   for (const tag in pairs) {
-    const v = pairs[tag].getValue(),
-      u = v;
+    const v = pairs[tag].getValue();
+    let u = v;
 
     if (v instanceof Array) {
       u = [];
@@ -646,6 +646,7 @@ export {
   CFindRSP,
   CGetRSP,
   CMoveRSP,
+  CMoveRQ,
   CFindRQ,
   CCancelRQ,
   CCancelMoveRQ,

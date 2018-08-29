@@ -1,4 +1,4 @@
-import Fibers from 'fibers';
+import Future from 'fibers/future';
 import Connection from './Connection.js';
 import C from './constants.js';
 
@@ -97,7 +97,7 @@ DIMSE.associate = function (contexts, callback, options) {
 
 DIMSE.retrievePatients = function (params, options) {
 
-  const future = new Fibers.Future();
+  const future = new Future();
 
   DIMSE.associate([C.SOP_PATIENT_ROOT_FIND], function (error, pdu) {
     if (error) {
@@ -140,7 +140,7 @@ DIMSE.retrievePatients = function (params, options) {
 
 DIMSE.retrieveStudies = function (params, options) {
   // Start = new Date();
-  const future = new Fibers.Future();
+  const future = new Future();
 
   DIMSE.associate([C.SOP_STUDY_ROOT_FIND], function (error, pdu) {
     if (error) {
@@ -230,7 +230,7 @@ DIMSE.retrieveInstancesByStudyOnly = function (studyInstanceUID, params, options
     return [];
   }
 
-  const future = new Fibers.Future();
+  const future = new Future();
 
   DIMSE.associate([C.SOP_STUDY_ROOT_FIND], function (error, pdu) {
     if (error) {
@@ -282,7 +282,7 @@ DIMSE.retrieveInstancesByStudyOnly = function (studyInstanceUID, params, options
 };
 
 DIMSE.retrieveSeries = function (studyInstanceUID, params, options) {
-  const future = new Fibers.Future();
+  const future = new Future();
 
   DIMSE.associate([C.SOP_STUDY_ROOT_FIND], function (error, pdu) {
     if (error) {
@@ -328,7 +328,7 @@ DIMSE.retrieveSeries = function (studyInstanceUID, params, options) {
 };
 
 DIMSE.retrieveInstances = function (studyInstanceUID, seriesInstanceUID, params, options) {
-  const future = new Fibers.Future();
+  const future = new Future();
 
   DIMSE.associate([C.SOP_STUDY_ROOT_FIND], function (error, pdu) {
     if (error) {

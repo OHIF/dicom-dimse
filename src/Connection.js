@@ -4,7 +4,7 @@ import util from 'util';
 import C from './constants.js';
 import { EventEmitter } from 'events';
 import CSocket from './CSocket.js';
-import PDU from './PDU.js';
+import { PDU } from './PDU.js';
 import { DicomMessage } from './Message.js';
 
 const Connection = function (options) {

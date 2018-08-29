@@ -1162,3 +1162,9 @@ DataElement.prototype.getFields = function () {
   return fields;
 };
 
+export {
+  elementByType,
+  elementKeywordByTag,
+  readAElement,
+  DataElement
+};

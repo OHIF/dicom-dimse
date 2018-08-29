@@ -162,6 +162,9 @@ DoubleField.prototype.isNumeric = function () {
   return true;
 };
 
+const OtherDoubleString = function () {};
+const OtherFloatString = function () {};
+
 export {
   BufferField,
   StringField,
@@ -175,5 +178,7 @@ export {
   Int16Field,
   Int32Field,
   FloatField,
-  DoubleField
+  DoubleField,
+  OtherDoubleString,
+  OtherFloatString
 };
