@@ -9,18 +9,17 @@
   "author": "",
   "homepage": "https://github.com/OHIF/DIMSE",
   "license": "MIT",
-  "main": "src/index.js",
-  "module": "src/index.js",
+  "main": "./dist/DIMSE.js",
+  "module": "./dist/DIMSE.js",
   "repository": {
     "type": "git",
     "url": "https://github.com/OHIF/DIMSE.git"
   },
   "scripts": {
-    "build": "npm run test:unit && npm run version && npm run webpack",
-    "build:dev": "npm run test:unit && npm run webpack:dev",
+    "build": "npm run test && npm run version && npm run webpack",
+    "build:dev": "npm run test && npm run webpack:dev",
     "docs": "npm run docs:api && cd docs && gitbook install && gitbook serve",
     "docs:api": "npm run clean:apidocs && documentation build src/index.js -f md -o docs/api.md",
-    "docs:deploy": "bash ./build/update-docs.sh",
     "eslint": "eslint -c .eslintrc.js src",
     "eslint-quiet": "eslint -c .eslintrc.js --quiet src",
     "eslint-fix": "eslint -c .eslintrc.js --fix src",

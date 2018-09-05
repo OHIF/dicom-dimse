@@ -1,13 +1,9 @@
 ## Directories
-node_modules
-docs/_book/
+node_modules/
+dist/
 
 ## Files
 .npmrc
-docs/api.md
-
-## File Types
-.idea
 
 ## Output
 coverage/
