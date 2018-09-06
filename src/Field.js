@@ -2,24 +2,20 @@ import util from 'util';
 import C from './constants.js';
 import { calcLength } from './RWStream.js';
 
-const Field = function (type, value) {
+const Field = (type, value) => {
   this.type = type;
   this.value = value;
 };
 
-Field.prototype.length = function () {
-  return calcLength(this.type, this.value);
-};
+Field.prototype.length = () => calcLength(this.type, this.value);
 
-Field.prototype.write = function (stream) {
+Field.prototype.write = (stream) => {
   stream.write(this.type, this.value);
 };
 
-Field.prototype.isNumeric = function () {
-  return false;
-};
+Field.prototype.isNumeric = () => false;
 
-const BufferField = function (buffer, start, length) {
+const BufferField = (buffer, start, length) => {
   Field.call(this, C.TYPE_BUFFER, buffer);
   this.bufferLength = length;
   this.bufferStart = start;
@@ -27,32 +23,28 @@ const BufferField = function (buffer, start, length) {
 
 util.inherits(BufferField, Field);
 
-BufferField.prototype.length = function () {
-  return this.bufferLength;
-};
+BufferField.prototype.length = () => this.bufferLength;
 
-BufferField.prototype.write = function (stream) {
+BufferField.prototype.write = (stream) => {
   stream.writeRawBuffer(this.value, this.bufferStart, this.bufferLength);
 };
 
-const StringField = function (str) {
+const StringField = (str) => {
   Field.call(this, C.TYPE_ASCII, typeof str === 'string' ? str : '');
 };
 
 util.inherits(StringField, Field);
 
-const FilledField = function (value, length) {
+const FilledField = (value, length) => {
   Field.call(this, C.TYPE_COMPOSITE, value);
   this.fillLength = length;
 };
 
 util.inherits(FilledField, Field);
 
-FilledField.prototype.length = function () {
-  return this.fillLength;
-};
+FilledField.prototype.length = () => this.fillLength;
 
-FilledField.prototype.write = function (stream) {
+FilledField.prototype.write = (stream) => {
   const len = this.value.length;
 
   if (len < this.fillLength && len >= 0) {
@@ -65,105 +57,89 @@ FilledField.prototype.write = function (stream) {
   } else if (len == this.fillLength) {
     stream.write(C.TYPE_ASCII, this.value);
   } else {
-    throw 'Length mismatch';
+    throw new Error('Length mismatch');
   }
 };
 
-const HexField = function (hex) {
+const HexField = (hex) => {
   Field.call(this, C.TYPE_HEX, hex);
 };
 
 util.inherits(HexField, Field);
 
-const ReservedField = function (length) {
+const ReservedField = (length) => {
   length = length || 1;
   Field.call(this, C.TYPE_HEX, '00'.repeat(length));
 };
 
 util.inherits(ReservedField, Field);
 
-const UInt8Field = function (value) {
+const UInt8Field = (value) => {
   Field.call(this, C.TYPE_UINT8, value);
 };
 
 util.inherits(UInt8Field, Field);
 
-UInt8Field.prototype.isNumeric = function () {
-  return true;
-};
+UInt8Field.prototype.isNumeric = () => true;
 
-const UInt16Field = function (value) {
+const UInt16Field = (value) => {
   Field.call(this, C.TYPE_UINT16, value);
 };
 
 util.inherits(UInt16Field, Field);
 
-UInt16Field.prototype.isNumeric = function () {
-  return true;
-};
+UInt16Field.prototype.isNumeric = () => true;
 
-const UInt32Field = function (value) {
+const UInt32Field = (value) => {
   Field.call(this, C.TYPE_UINT32, value);
 };
 
 util.inherits(UInt32Field, Field);
 
-UInt32Field.prototype.isNumeric = function () {
-  return true;
-};
+UInt32Field.prototype.isNumeric = () => true;
 
-const Int8Field = function (value) {
+const Int8Field = (value) => {
   Field.call(this, C.TYPE_INT8, value);
 };
 
 util.inherits(Int8Field, Field);
 
-Int8Field.prototype.isNumeric = function () {
-  return true;
-};
+Int8Field.prototype.isNumeric = () => true;
 
-const Int16Field = function (value) {
+const Int16Field = (value) => {
   Field.call(this, C.TYPE_INT16, value);
 };
 
 util.inherits(Int16Field, Field);
 
-Int16Field.prototype.isNumeric = function () {
-  return true;
-};
+Int16Field.prototype.isNumeric = () => true;
 
-const Int32Field = function (value) {
+const Int32Field = (value) => {
   Field.call(this, C.TYPE_INT32, value);
 };
 
 util.inherits(Int32Field, Field);
 
-Int32Field.prototype.isNumeric = function () {
-  return true;
-};
+Int32Field.prototype.isNumeric = () => true;
 
-const FloatField = function (value) {
+const FloatField = (value) => {
   Field.call(this, C.TYPE_FLOAT, value);
 };
 
 util.inherits(FloatField, Field);
 
-FloatField.prototype.isNumeric = function () {
-  return true;
-};
+FloatField.prototype.isNumeric = () => true;
 
-const DoubleField = function (value) {
+const DoubleField = (value) => {
   Field.call(this, C.TYPE_DOUBLE, value);
 };
 
 util.inherits(DoubleField, Field);
 
-DoubleField.prototype.isNumeric = function () {
-  return true;
-};
+DoubleField.prototype.isNumeric = () => true;
 
-const OtherDoubleString = function () {};
-const OtherFloatString = function () {};
+const OtherDoubleString = () => {};
+const OtherFloatString = () => {};
 
 export {
   BufferField,

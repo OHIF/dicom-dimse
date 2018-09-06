@@ -203,7 +203,7 @@ const sendProcessedFiles = function (self, contexts, toSend, handle, metaLength)
         syntaxes: useSyntaxes
       });
     } else {
-      throw `No syntax specified for context ${context}`;
+      throw new Error(`No syntax specified for context ${context}`);
     }
   });
 
@@ -233,7 +233,7 @@ Connection.prototype.storeResponse = function (messageId, msg) {
       replyMessage.setReplyMessageId(this.lastCommand.messageId);
       this.sendMessage(replyMessage, null, null, storeSr);
     } else {
-      throw 'Missing store status';
+      throw new Error('Missing store status');
     }
   }
 };
@@ -264,12 +264,11 @@ Connection.prototype.addSocket = function (hostAE, socket) {
 };
 
 Connection.prototype.associate = function (options, callback) {
-  const self = this;
   const hostAE = options.hostAE ? options.hostAE : this.defaultPeer;
   const sourceAE = options.sourceAE ? options.sourceAE : this.defaultServer;
 
   if (!hostAE || !sourceAE) {
-    throw 'Peers not provided or no defaults in settings';
+    throw new Error('Peers not provided or no defaults in settings');
   }
 
   const peerInfo = this.selectPeer(hostAE);

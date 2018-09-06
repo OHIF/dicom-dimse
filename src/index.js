@@ -12,7 +12,7 @@ const DIMSE = {
 
 const conn = DIMSE.connection;
 
-DIMSE.associate = function (contexts, callback, options) {
+DIMSE.associate = (contexts, callback, options) => {
   const defaults = {
     contexts
   };
@@ -21,26 +21,26 @@ DIMSE.associate = function (contexts, callback, options) {
 
   console.info('Associating...');
 
-  const socket = conn.associate(options, function (pdu) {
+  const socket = conn.associate(options, (pdu) => {
     // Associated
     console.info('==Associated');
     callback.call(this, null, pdu);
   });
 
-  socket.on('error', function (error) {
+  socket.on('error', (error) => {
     callback(error, null);
   });
 
-  socket.on('timeout', function (error) {
+  socket.on('timeout', (error) => {
     callback(error, null);
   });
 };
 
-DIMSE.retrievePatients = function (params, options) {
+DIMSE.retrievePatients = (params, options) => {
 
   const future = new Future();
 
-  DIMSE.associate([C.SOP_PATIENT_ROOT_FIND], function (error, pdu) {
+  DIMSE.associate([C.SOP_PATIENT_ROOT_FIND], (error, pdu) => {
     if (error) {
       console.error('Could not retrieve patients');
       console.trace();
@@ -58,19 +58,17 @@ DIMSE.retrievePatients = function (params, options) {
     };
 
     const result = this.findPatients(Object.assign(defaultParams, params));
-    const self = this;
     const patients = [];
 
-    result.on('result', function (msg) {
+    result.on('result', (msg) => {
       patients.push(msg);
     });
 
-    result.on('end', function () {
-      self.release();
+    result.on('end', () => {
+      this.release();
     });
 
-    this.on('close', function () {
-      // Time = new Date() - start;console.log(time + 'ms taken');
+    this.on('close', () => {
       future.return(patients);
     });
   }, options);
@@ -78,11 +76,11 @@ DIMSE.retrievePatients = function (params, options) {
   return future.wait();
 };
 
-DIMSE.retrieveStudies = function (params, options) {
+DIMSE.retrieveStudies = (params, options) => {
   // Start = new Date();
   const future = new Future();
 
-  DIMSE.associate([C.SOP_STUDY_ROOT_FIND], function (error, pdu) {
+  DIMSE.associate([C.SOP_STUDY_ROOT_FIND], (error, pdu) => {
     if (error) {
       console.error('Could not retrieve studies');
       console.trace();
@@ -105,18 +103,16 @@ DIMSE.retrieveStudies = function (params, options) {
 
     const result = this.findStudies(Object.assign(defaultParams, params));
     const studies = [];
-    const self = this;
 
-    result.on('result', function (msg) {
+    result.on('result', (msg) => {
       studies.push(msg);
     });
 
-    result.on('end', function () {
-      self.release();
+    result.on('end', () => {
+      this.release();
     });
 
-    this.on('close', function () {
-      // Time = new Date() - start;console.log(time + 'ms taken');
+    this.on('close', () => {
       future.return(studies);
     });
   }, options);
@@ -124,17 +120,17 @@ DIMSE.retrieveStudies = function (params, options) {
   return future.wait();
 };
 
-DIMSE._retrieveInstancesBySeries = function (conn, series, studyInstanceUID, callback, params) {
+DIMSE._retrieveInstancesBySeries = (conn, series, studyInstanceUID, callback, params) => {
   const aSeries = series.shift();
   const seriesInstanceUID = aSeries.getValue(0x0020000E);
   const defaultParams = getInstanceRetrievalParams(studyInstanceUID, seriesInstanceUID);
   const result = conn.findInstances(Object.assign(defaultParams, params));
   const instances = [];
 
-  result.on('result', function (msg) {
+  result.on('result', (msg) => {
     instances.push(msg);
   });
-  result.on('end', function () {
+  result.on('end', () => {
     if (series.length > 0) {
       callback(instances, false);
       DIMSE._retrieveInstancesBySeries(conn, series, studyInstanceUID, callback, params);
@@ -144,7 +140,7 @@ DIMSE._retrieveInstancesBySeries = function (conn, series, studyInstanceUID, cal
   });
 };
 
-DIMSE.retrieveInstancesByStudyOnlyMulti = function (studyInstanceUID, params, options) {
+DIMSE.retrieveInstancesByStudyOnlyMulti = (studyInstanceUID, params, options) => {
   if (!studyInstanceUID) {
     return [];
   }
@@ -152,7 +148,7 @@ DIMSE.retrieveInstancesByStudyOnlyMulti = function (studyInstanceUID, params, op
   const series = DIMSE.retrieveSeries(studyInstanceUID, params, options);
   let instances = [];
 
-  series.forEach(function (seriesData) {
+  series.forEach((seriesData) => {
     const seriesInstanceUID = seriesData.getValue(0x0020000E);
     const relatedInstances = DIMSE.retrieveInstances(studyInstanceUID, seriesInstanceUID, params, options);
 
@@ -162,14 +158,14 @@ DIMSE.retrieveInstancesByStudyOnlyMulti = function (studyInstanceUID, params, op
   return instances;
 };
 
-DIMSE.retrieveInstancesByStudyOnly = function (studyInstanceUID, params, options) {
+DIMSE.retrieveInstancesByStudyOnly = (studyInstanceUID, params, options) => {
   if (!studyInstanceUID) {
     return [];
   }
 
   const future = new Future();
 
-  DIMSE.associate([C.SOP_STUDY_ROOT_FIND], function (error, pdu) {
+  DIMSE.associate([C.SOP_STUDY_ROOT_FIND], (error, pdu) => {
     if (error) {
       console.error('Could not retrieve Instances By Study');
       console.trace();
@@ -195,12 +191,12 @@ DIMSE.retrieveInstancesByStudyOnly = function (studyInstanceUID, params, options
     const conn = this;
     let allInstances = [];
 
-    result.on('result', function (msg) {
+    result.on('result', (msg) => {
       series.push(msg);
     });
-    result.on('end', function () {
+    result.on('end', () => {
       if (series.length > 0) {
-        DIMSE._retrieveInstancesBySeries(conn, series, studyInstanceUID, function (relatedInstances, isEnd) {
+        DIMSE._retrieveInstancesBySeries(conn, series, studyInstanceUID, (relatedInstances, isEnd) => {
           allInstances = allInstances.concat(relatedInstances);
           if (isEnd) {
             conn.release();
@@ -210,7 +206,8 @@ DIMSE.retrieveInstancesByStudyOnly = function (studyInstanceUID, params, options
         conn.release();
       }
     });
-    conn.on('close', function () {
+
+    this.on('close', () => {
       future.return(allInstances);
     });
   });
@@ -218,10 +215,10 @@ DIMSE.retrieveInstancesByStudyOnly = function (studyInstanceUID, params, options
   return future.wait();
 };
 
-DIMSE.retrieveSeries = function (studyInstanceUID, params, options) {
+DIMSE.retrieveSeries = (studyInstanceUID, params, options) => {
   const future = new Future();
 
-  DIMSE.associate([C.SOP_STUDY_ROOT_FIND], function (error, pdu) {
+  DIMSE.associate([C.SOP_STUDY_ROOT_FIND], (error, pdu) => {
     if (error) {
       console.error('Could not retrieve series');
       console.trace();
@@ -244,29 +241,29 @@ DIMSE.retrieveSeries = function (studyInstanceUID, params, options) {
     };
 
     const result = this.findSeries(Object.assign(defaultParams, params));
-    const self = this;
     const series = [];
 
-    result.on('result', function (msg) {
+    result.on('result', (msg) => {
       series.push(msg);
     });
 
-    result.on('end', function () {
-      self.release();
+    result.on('end', () => {
+      this.release();
     });
 
-    this.on('close', function () {
+    this.on('close', () => {
       future.return(series);
     });
+
   }, options);
 
   return future.wait();
 };
 
-DIMSE.retrieveInstances = function (studyInstanceUID, seriesInstanceUID, params, options) {
+DIMSE.retrieveInstances = (studyInstanceUID, seriesInstanceUID, params, options) => {
   const future = new Future();
 
-  DIMSE.associate([C.SOP_STUDY_ROOT_FIND], function (error, pdu) {
+  DIMSE.associate([C.SOP_STUDY_ROOT_FIND], (error, pdu) => {
     if (error) {
       console.error('Could not retrieve instances');
       console.trace();
@@ -276,36 +273,35 @@ DIMSE.retrieveInstances = function (studyInstanceUID, seriesInstanceUID, params,
 
     const defaultParams = getInstanceRetrievalParams(studyInstanceUID, seriesInstanceUID);
     const result = this.findInstances(Object.assign(defaultParams, params));
-    const self = this;
-
     const instances = [];
 
-    result.on('result', function (msg) {
+    result.on('result', (msg) => {
       instances.push(msg);
     });
 
-    result.on('end', function () {
-      self.release();
+    result.on('end', () => {
+      this.release();
     });
 
-    this.on('close', function () {
+    this.on('close', () => {
       future.return(instances);
     });
+
   }, options);
 
   return future.wait();
 };
 
-DIMSE.storeInstances = function (fileList, callback) {
+DIMSE.storeInstances = (fileList, callback) => {
   const handle = conn.storeInstances(fileList);
 
-  handle.on('file', function (err, file) {
+  handle.on('file', (err, file) => {
     callback(err, file);
   });
 };
 
-DIMSE.moveInstances = function (studyInstanceUID, seriesInstanceUID, sopInstanceUID, sopClassUID, params) {
-  DIMSE.associate([C.SOP_STUDY_ROOT_MOVE, sopClassUID], function (error) {
+DIMSE.moveInstances = (studyInstanceUID, seriesInstanceUID, sopInstanceUID, sopClassUID, params) => {
+  DIMSE.associate([C.SOP_STUDY_ROOT_MOVE, sopClassUID], (error) => {
     if (error) {
       console.error('Could not move instances');
       console.trace();
