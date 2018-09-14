@@ -8,4 +8,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [0.0.1] - 2018-08-24
 ### Added
-- TODO
+- Migrate all code from OHIF/Viewers
+- Fixed esLint issues
+- Cleanup a the code
+- Migrate functions and variables to ES6 patterns
+- Create a webpack bundle for node libraries

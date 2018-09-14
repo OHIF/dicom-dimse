@@ -6,14 +6,14 @@
     "DICOM",
     "DIMSE"
   ],
-  "author": "",
-  "homepage": "https://github.com/OHIF/DIMSE",
+  "author": "Open Health Imaging Foundation",
+  "homepage": "https://github.com/OHIF/dicom-dimse",
   "license": "MIT",
   "main": "./dist/DIMSE.js",
   "module": "./dist/DIMSE.js",
   "repository": {
     "type": "git",
-    "url": "https://github.com/OHIF/DIMSE.git"
+    "url": "https://github.com/OHIF/dicom-dimse.git"
   },
   "scripts": {
     "build": "npm run test && npm run version && npm run webpack",

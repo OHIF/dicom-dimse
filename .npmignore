@@ -1,6 +1,7 @@
 ## All Non-Dist Directories
 .github/
 docs/
+src/
 
 ## Root Files
 .eslintignore
