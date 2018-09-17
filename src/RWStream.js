@@ -1,7 +1,7 @@
 import util from 'util';
 import C from './constants.js';
 
-const isString = (type) => {
+const isString = function (type) {
   if (type === C.TYPE_ASCII || type === C.TYPE_HEX) {
     return true;
   }
@@ -10,61 +10,47 @@ const isString = (type) => {
 
 };
 
-const calcLength = (type, value) => {
+const calcLength = function (type, value) {
   let size = NaN;
 
   switch (type) {
-  case C.TYPE_HEX:
-    size = Buffer.byteLength(value, 'hex');
-    break;
-  case C.TYPE_ASCII:
-    size = Buffer.byteLength(value, 'ascii');
-    break;
-  case C.TYPE_UINT8:
-    size = 1;
-    break;
-  case C.TYPE_UINT16:
-    size = 2;
-    break;
-  case C.TYPE_UINT32:
-    size = 4;
-    break;
-  case C.TYPE_FLOAT:
-    size = 4;
-    break;
-  case C.TYPE_DOUBLE:
-    size = 8;
-    break;
-  case C.TYPE_INT8:
-    size = 1;
-    break;
-  case C.TYPE_INT16:
-    size = 2;
-    break;
-  case C.TYPE_INT32:
-    size = 4;
-    break;
+  case C.TYPE_HEX : size = Buffer.byteLength(value, 'hex'); break;
+  case C.TYPE_ASCII : size = Buffer.byteLength(value, 'ascii'); break;
+  case C.TYPE_UINT8 : size = 1; break;
+  case C.TYPE_UINT16 : size = 2; break;
+  case C.TYPE_UINT32 : size = 4; break;
+  case C.TYPE_FLOAT : size = 4; break;
+  case C.TYPE_DOUBLE : size = 8; break;
+  case C.TYPE_INT8 : size = 1; break;
+  case C.TYPE_INT16 : size = 2; break;
+  case C.TYPE_INT32 : size = 4; break;
   default :break;
   }
 
   return size;
 };
 
-const RWStream = () => {
+const RWStream = function () {
   this.endian = C.BIG_ENDIAN;
 };
 
-RWStream.prototype.setEndian = (endian) => {
+RWStream.prototype.setEndian = function (endian) {
   this.endian = endian;
 };
 
-RWStream.prototype.getEncoding = (type) => RWStream.encodings[type];
+RWStream.prototype.getEncoding = function (type) {
+  return RWStream.encodings[type];
+};
 
-RWStream.prototype.getWriteType = (type) => RWStream.writes[this.endian][type];
+RWStream.prototype.getWriteType = function (type) {
+  return RWStream.writes[this.endian][type];
+};
 
-RWStream.prototype.getReadType = (type) => RWStream.reads[this.endian][type];
+RWStream.prototype.getReadType = function (type) {
+  return RWStream.reads[this.endian][type];
+};
 
-const WriteStream = () => {
+const WriteStream = function () {
   RWStream.call(this);
   this.defaultBufferSize = 512; // 512 bytes
   this.rawBuffer = Buffer.alloc(this.defaultBufferSize);
@@ -74,31 +60,33 @@ const WriteStream = () => {
 
 util.inherits(WriteStream, RWStream);
 
-WriteStream.prototype.increment = (add) => {
+WriteStream.prototype.increment = function (add) {
   this.offset += add;
   if (this.offset > this.contentSize) {
     this.contentSize = this.offset;
   }
 };
 
-WriteStream.prototype.size = () => this.contentSize;
+WriteStream.prototype.size = function () {
+  return this.contentSize;
+};
 
-WriteStream.prototype.skip = (amount) => {
+WriteStream.prototype.skip = function (amount) {
   this.increment(amount);
 };
 
-WriteStream.prototype.checkSize = (length) => {
+WriteStream.prototype.checkSize = function (length) {
   if (this.offset + length > this.rawBuffer.length) {
     // We need more size, copying old one to new buffer
-    const oldLength = this.rawBuffer.length;
-    const newBuffer = Buffer.alloc(oldLength + length + (oldLength / 2));
+    let oldLength = this.rawBuffer.length,
+      newBuffer = Buffer.alloc(oldLength + length + (oldLength / 2));
 
     this.rawBuffer.copy(newBuffer, 0, 0, this.contentSize);
     this.rawBuffer = newBuffer;
   }
 };
 
-WriteStream.prototype.writeToBuffer = (type, value, length) => {
+WriteStream.prototype.writeToBuffer = function (type, value, length) {
   if (value === '' || value === null) {
     return;
   }
@@ -108,7 +96,7 @@ WriteStream.prototype.writeToBuffer = (type, value, length) => {
   this.increment(length);
 };
 
-WriteStream.prototype.writeRawBuffer = (source, start, length) => {
+WriteStream.prototype.writeRawBuffer = function (source, start, length) {
   if (!source) {
     return;
   }
@@ -117,7 +105,7 @@ WriteStream.prototype.writeRawBuffer = (source, start, length) => {
   this.increment(length);
 };
 
-WriteStream.prototype.write = (type, value) => {
+WriteStream.prototype.write = function (type, value) {
   if (isString(type)) {
     this.writeString(value, type);
   } else {
@@ -125,19 +113,23 @@ WriteStream.prototype.write = (type, value) => {
   }
 };
 
-WriteStream.prototype.writeString = (string, type) => {
-  const encoding = this.getEncoding(type);
-  const length = Buffer.byteLength(string, encoding);
+WriteStream.prototype.writeString = function (string, type) {
+  let encoding = this.getEncoding(type),
+    length = Buffer.byteLength(string, encoding);
 
   this.rawBuffer.write(string, this.offset, length, encoding);
   this.increment(length);
 };
 
-WriteStream.prototype.buffer = () => this.rawBuffer.slice(0, this.contentSize);
+WriteStream.prototype.buffer = function () {
+  return this.rawBuffer.slice(0, this.contentSize);
+};
 
-WriteStream.prototype.toReadBuffer = () => new ReadStream(this.buffer());
+WriteStream.prototype.toReadBuffer = function () {
+  return new ReadStream(this.buffer());
+};
 
-WriteStream.prototype.concat = (newStream) => {
+WriteStream.prototype.concat = function (newStream) {
   const newSize = this.size() + newStream.size();
 
   this.rawBuffer = Buffer.concat([this.buffer(), newStream.buffer()], newSize);
@@ -145,7 +137,7 @@ WriteStream.prototype.concat = (newStream) => {
   this.offset = newSize;
 };
 
-const ReadStream = (buffer) => {
+const ReadStream = function (buffer) {
   RWStream.call(this);
   this.rawBuffer = buffer;
   this.offset = 0;
@@ -153,13 +145,15 @@ const ReadStream = (buffer) => {
 
 util.inherits(ReadStream, RWStream);
 
-ReadStream.prototype.size = () => this.rawBuffer.length;
+ReadStream.prototype.size = function () {
+  return this.rawBuffer.length;
+};
 
-ReadStream.prototype.increment = (add) => {
+ReadStream.prototype.increment = function (add) {
   this.offset += add;
 };
 
-ReadStream.prototype.more = (length) => {
+ReadStream.prototype.more = function (length) {
   const newBuf = this.rawBuffer.slice(this.offset, this.offset + length);
 
   this.increment(length);
@@ -167,15 +161,17 @@ ReadStream.prototype.more = (length) => {
   return new ReadStream(newBuf);
 };
 
-ReadStream.prototype.reset = () => {
+ReadStream.prototype.reset = function () {
   this.offset = 0;
 
   return this;
 };
 
-ReadStream.prototype.end = () => this.offset >= this.size();
+ReadStream.prototype.end = function () {
+  return this.offset >= this.size();
+};
 
-ReadStream.prototype.readFromBuffer = (type, length) => {
+ReadStream.prototype.readFromBuffer = function (type, length) {
   // This.checkSize(length);
   // If (this.offset + length > this.rawBuffer.length) throw ("out of bound " + this.offset + "," + length + "," + this.rawBuffer.length);
   const value = this.rawBuffer[this.getReadType(type)](this.offset);
@@ -185,7 +181,7 @@ ReadStream.prototype.readFromBuffer = (type, length) => {
   return value;
 };
 
-ReadStream.prototype.read = (type, length) => {
+ReadStream.prototype.read = function (type, length) {
   let value = null;
 
   if (isString(type)) {
@@ -197,18 +193,20 @@ ReadStream.prototype.read = (type, length) => {
   return value;
 };
 
-ReadStream.prototype.readString = (length, type) => {
-  const encoding = this.getEncoding(type);
-  const str = this.rawBuffer.toString(encoding, this.offset, this.offset + length);
+ReadStream.prototype.readString = function (length, type) {
+  let encoding = this.getEncoding(type),
+    str = this.rawBuffer.toString(encoding, this.offset, this.offset + length);
 
   this.increment(length);
 
   return str;
 };
 
-ReadStream.prototype.buffer = () => this.rawBuffer;
+ReadStream.prototype.buffer = function () {
+  return this.rawBuffer;
+};
 
-ReadStream.prototype.concat = (newStream) => {
+ReadStream.prototype.concat = function (newStream) {
   const newSize = this.size() + newStream.size();
 
   this.rawBuffer = Buffer.concat([this.buffer(), newStream.buffer()], newSize);
@@ -262,7 +260,7 @@ RWStream.encodings = {};
 RWStream.encodings[C.TYPE_HEX] = 'hex';
 RWStream.encodings[C.TYPE_ASCII] = 'ascii';
 
-export {
+export  {
   calcLength,
   ReadStream,
   WriteStream

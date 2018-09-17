@@ -5,7 +5,7 @@ const context = path.join(rootPath, 'src');
 const outputPath = path.join(rootPath, 'dist');
 
 module.exports = {
-  mode: 'production',
+  mode: 'development',
   context,
   entry: {
     DIMSE: './index.js'

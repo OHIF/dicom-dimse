@@ -10,16 +10,18 @@ import {
   readAElement
 } from './Data.js';
 
-const DicomMessage = (syntax) => {
+const DicomMessage = function (syntax) {
   this.syntax = syntax ? syntax : null;
   this.type = C.DATA_TYPE_COMMAND;
   this.messageId = C.DEFAULT_MESSAGE_ID;
   this.elementPairs = {};
 };
 
-DicomMessage.prototype.isCommand = () => this.type === C.DATA_TYPE_COMMAND;
+DicomMessage.prototype.isCommand = function () {
+  return this.type == C.DATA_TYPE_COMMAND;
+};
 
-DicomMessage.prototype.setSyntax = (syntax) => {
+DicomMessage.prototype.setSyntax = function (syntax) {
   this.syntax = syntax;
 
   for (const tag in this.elementPairs) {
@@ -27,15 +29,15 @@ DicomMessage.prototype.setSyntax = (syntax) => {
   }
 };
 
-DicomMessage.prototype.setMessageId = (id) => {
+DicomMessage.prototype.setMessageId = function (id) {
   this.messageId = id;
 };
 
-DicomMessage.prototype.setReplyMessageId = (id) => {
+DicomMessage.prototype.setReplyMessageId = function (id) {
   this.replyMessageId = id;
 };
 
-DicomMessage.prototype.command = (cmds) => {
+DicomMessage.prototype.command = function (cmds) {
   cmds.unshift(this.newElement(0x00000800, this.dataSetPresent ? C.DATA_SET_PRESENT : C.DATE_SET_ABSENCE));
   cmds.unshift(this.newElement(0x00000700, this.priority));
   cmds.unshift(this.newElement(0x00000110, this.messageId));
@@ -44,7 +46,7 @@ DicomMessage.prototype.command = (cmds) => {
 
   let length = 0;
 
-  cmds.forEach((cmd) => {
+  cmds.forEach(function (cmd) {
     length += cmd.length(cmd.getFields());
   });
 
@@ -53,7 +55,7 @@ DicomMessage.prototype.command = (cmds) => {
   return cmds;
 };
 
-DicomMessage.prototype.response = (cmds) => {
+DicomMessage.prototype.response = function (cmds) {
   cmds.unshift(this.newElement(0x00000800, this.dataSetPresent ? C.DATA_SET_PRESENT : C.DATE_SET_ABSENCE));
   cmds.unshift(this.newElement(0x00000120, this.replyMessageId));
   cmds.unshift(this.newElement(0x00000100, this.commandType));
@@ -63,7 +65,7 @@ DicomMessage.prototype.response = (cmds) => {
 
   let length = 0;
 
-  cmds.forEach((cmd) => {
+  cmds.forEach(function (cmd) {
     length += cmd.length(cmd.getFields());
   });
 
@@ -72,7 +74,7 @@ DicomMessage.prototype.response = (cmds) => {
   return cmds;
 };
 
-DicomMessage.prototype.setElements = (pairs) => {
+DicomMessage.prototype.setElements = function (pairs) {
   const p = {};
 
   for (const tag in pairs) {
@@ -82,49 +84,59 @@ DicomMessage.prototype.setElements = (pairs) => {
   this.elementPairs = p;
 };
 
-DicomMessage.prototype.newElement = (tag, value) => elementByType(tag, value, this.syntax);
+DicomMessage.prototype.newElement = function (tag, value) {
+  return elementByType(tag, value, this.syntax);
+};
 
-DicomMessage.prototype.setElement = (key, value) => {
+DicomMessage.prototype.setElement = function (key, value) {
   this.elementPairs[key] = elementByType(key, value);
 };
 
-DicomMessage.prototype.setElementPairs = (pairs) => {
+DicomMessage.prototype.setElementPairs = function (pairs) {
   this.elementPairs = pairs;
 };
 
-DicomMessage.prototype.setContextId = (context) => {
+DicomMessage.prototype.setContextId = function (context) {
   this.contextUID = context;
 };
 
-DicomMessage.prototype.setPriority = (pri) => {
+DicomMessage.prototype.setPriority = function (pri) {
   this.priority = pri;
 };
 
-DicomMessage.prototype.setType = (type) => {
+DicomMessage.prototype.setType = function (type) {
   this.type = type;
 };
 
-DicomMessage.prototype.setDataSetPresent = (present) => {
-  this.dataSetPresent = present !== 0x0101;
+DicomMessage.prototype.setDataSetPresent = function (present) {
+  this.dataSetPresent = present != 0x0101;
 };
 
-DicomMessage.prototype.haveData = () => this.dataSetPresent;
-
-DicomMessage.prototype.tags = () => Object.keys(this.elementPairs);
-
-DicomMessage.prototype.key = (tag) => elementKeywordByTag(tag);
-
-DicomMessage.prototype.getValue = (tag) => {
-  const element = this.elementPairs[tag];
-
-  return element ? element.getValue() : null;
+DicomMessage.prototype.haveData = function () {
+  return this.dataSetPresent;
 };
 
-DicomMessage.prototype.affectedSOPClassUID = () => this.getValue(0x00000002);
+DicomMessage.prototype.tags = function () {
+  return Object.keys(this.elementPairs);
+};
 
-DicomMessage.prototype.getMessageId = () => this.getValue(0x00000110);
+DicomMessage.prototype.key = function (tag) {
+  return elementKeywordByTag(tag);
+};
 
-DicomMessage.prototype.getFields = () => {
+DicomMessage.prototype.getValue = function (tag) {
+  return this.elementPairs[tag] ? this.elementPairs[tag].getValue() : null;
+};
+
+DicomMessage.prototype.affectedSOPClassUID = function () {
+  return this.getValue(0x00000002);
+};
+
+DicomMessage.prototype.getMessageId = function () {
+  return this.getValue(0x00000110);
+};
+
+DicomMessage.prototype.getFields = function () {
   const eles = [];
 
   for (const tag in this.elementPairs) {
@@ -134,30 +146,35 @@ DicomMessage.prototype.getFields = () => {
   return eles;
 };
 
-DicomMessage.prototype.length = (elems) => {
+DicomMessage.prototype.length = function (elems) {
   let len = 0;
 
-  elems.forEach((elem) => {
+  elems.forEach(function (elem) {
     len += elem.length(elem.getFields());
   });
 
   return len;
 };
 
-DicomMessage.prototype.isResponse = () => false;
+DicomMessage.prototype.isResponse = function () {
+  return false;
+};
 
-DicomMessage.prototype.is = (type) => this.commandType === type;
+DicomMessage.prototype.is = function (type) {
+  return this.commandType == type;
+};
 
-DicomMessage.prototype.write = (stream) => {
-  const fields = this.getFields();
+DicomMessage.prototype.write = function (stream) {
+  let fields = this.getFields(),
+    o = this;
 
-  fields.forEach((field) => {
-    field.setSyntax(this.syntax);
+  fields.forEach(function (field) {
+    field.setSyntax(o.syntax);
     field.write(stream);
   });
 };
 
-DicomMessage.prototype.printElements = (pairs, indent) => {
+DicomMessage.prototype.printElements = function (pairs, indent) {
   let typeName = '';
 
   for (const tag in pairs) {
@@ -165,9 +182,11 @@ DicomMessage.prototype.printElements = (pairs, indent) => {
 
     typeName += `${(' '.repeat(indent)) + this.key(tag)} : `;
     if (value instanceof Array) {
-      value.forEach((p) => {
+      const o = this;
+
+      value.forEach(function (p) {
         if (typeof p === 'object') {
-          typeName += `[\n${this.printElements(p, indent + 2)}${' '.repeat(indent)}]`;
+          typeName += `[\n${o.printElements(p, indent + 2)}${' '.repeat(indent)}]`;
         } else {
           typeName += `[${p}]`;
         }
@@ -183,44 +202,28 @@ DicomMessage.prototype.printElements = (pairs, indent) => {
   return typeName;
 };
 
-DicomMessage.prototype.typeString = () => {
+DicomMessage.prototype.typeString = function () {
   let typeName = '';
 
-  if (this.isCommand()) {
-    switch (this.commandType) {
-    case C.COMMAND_C_GET_RSP:
-      typeName = 'C-GET-RSP';
-      break;
-    case C.COMMAND_C_MOVE_RSP:
-      typeName = 'C-MOVE-RSP';
-      break;
-    case C.COMMAND_C_GET_RQ:
-      typeName = 'C-GET-RQ';
-      break;
-    case C.COMMAND_C_STORE_RQ:
-      typeName = 'C-STORE-RQ';
-      break;
-    case C.COMMAND_C_FIND_RSP:
-      typeName = 'C-FIND-RSP';
-      break;
-    case C.COMMAND_C_MOVE_RQ:
-      typeName = 'C-MOVE-RQ';
-      break;
-    case C.COMMAND_C_FIND_RQ:
-      typeName = 'C-FIND-RQ';
-      break;
-    case C.COMMAND_C_STORE_RSP:
-      typeName = 'C-STORE-RSP';
-      break;
-    }
-  } else {
+  if (!this.isCommand()) {
     typeName = 'DateSet Message';
+  } else {
+    switch (this.commandType) {
+    case C.COMMAND_C_GET_RSP : typeName = 'C-GET-RSP'; break;
+    case C.COMMAND_C_MOVE_RSP : typeName = 'C-MOVE-RSP'; break;
+    case C.COMMAND_C_GET_RQ : typeName = 'C-GET-RQ'; break;
+    case C.COMMAND_C_STORE_RQ : typeName = 'C-STORE-RQ'; break;
+    case C.COMMAND_C_FIND_RSP : typeName = 'C-FIND-RSP'; break;
+    case C.COMMAND_C_MOVE_RQ : typeName = 'C-MOVE-RQ'; break;
+    case C.COMMAND_C_FIND_RQ : typeName = 'C-FIND-RQ'; break;
+    case C.COMMAND_C_STORE_RSP : typeName = 'C-STORE-RSP'; break;
+    }
   }
 
   return typeName;
 };
 
-DicomMessage.prototype.toString = () => {
+DicomMessage.prototype.toString = function () {
   let typeName = this.typeString();
 
   typeName += ' [\n';
@@ -230,8 +233,9 @@ DicomMessage.prototype.toString = () => {
   return typeName;
 };
 
-DicomMessage.prototype.walkObject = (pairs) => {
+DicomMessage.prototype.walkObject = function (pairs) {
   const obj = {};
+  const o = this;
 
   for (const tag in pairs) {
     const v = pairs[tag].getValue();
@@ -239,9 +243,9 @@ DicomMessage.prototype.walkObject = (pairs) => {
 
     if (v instanceof Array) {
       u = [];
-      v.forEach((a) => {
+      v.forEach(function (a) {
         if (typeof a === 'object') {
-          u.push(this.walkObject(a));
+          u.push(o.walkObject(a));
         } else {
           u.push(a);
         }
@@ -254,9 +258,11 @@ DicomMessage.prototype.walkObject = (pairs) => {
   return obj;
 };
 
-DicomMessage.prototype.toObject = () => this.walkObject(this.elementPairs);
+DicomMessage.prototype.toObject = function () {
+  return this.walkObject(this.elementPairs);
+};
 
-DicomMessage.readToPairs = (stream, syntax, options) => {
+DicomMessage.readToPairs = function (stream, syntax, options) {
   const pairs = {};
 
   while (!stream.end()) {
@@ -274,9 +280,11 @@ DicomMessage.readToPairs = (stream, syntax, options) => {
   return pairs;
 };
 
-const fileValid = (stream) => stream.readString(4, C.TYPE_ASCII) === 'DICM';
+const fileValid = function (stream) {
+  return stream.readString(4, C.TYPE_ASCII) == 'DICM';
+};
 
-const readMetaStream = (stream, useSyntax, length, callback) => {
+const readMetaStream = function (stream, useSyntax, length, callback) {
   const message = new FileMetaMessage();
 
   message.setElementPairs(DicomMessage.readToPairs(stream, useSyntax));
@@ -287,7 +295,7 @@ const readMetaStream = (stream, useSyntax, length, callback) => {
   return message;
 };
 
-DicomMessage.readMetaHeader = (bufferOrFile, callback) => {
+DicomMessage.readMetaHeader = function (bufferOrFile, callback) {
   const useSyntax = C.EXPLICIT_LITTLE_ENDIAN;
 
   if (bufferOrFile instanceof Buffer) {
@@ -299,13 +307,13 @@ DicomMessage.readMetaHeader = (bufferOrFile, callback) => {
       return quitWithError('Invalid a dicom file ', callback);
     }
 
-    const el = readAElement(stream, useSyntax);
-    const metaLength = el.value;
-    const metaStream = stream.more(metaLength);
+    let el = readAElement(stream, useSyntax),
+      metaLength = el.value,
+      metaStream = stream.more(metaLength);
 
     return readMetaStream(metaStream, useSyntax, metaLength, callback);
   } else if (typeof bufferOrFile === 'string') {
-    fs.open(bufferOrFile, 'r', (err, fd) => {
+    fs.open(bufferOrFile, 'r', function (err, fd) {
       if (err) {
         // Fs.closeSync(fd);
         return quitWithError('Cannot open file', callback);
@@ -313,8 +321,8 @@ DicomMessage.readMetaHeader = (bufferOrFile, callback) => {
 
       const buffer = Buffer.alloc(16);
 
-      fs.read(fd, buffer, 0, 16, 128, (err, bytesRead) => {
-        if (err || bytesRead !== 16) {
+      fs.read(fd, buffer, 0, 16, 128, function (err, bytesRead) {
+        if (err || bytesRead != 16) {
           fs.closeSync(fd);
 
           return quitWithError('Cannot read file', callback);
@@ -328,13 +336,13 @@ DicomMessage.readMetaHeader = (bufferOrFile, callback) => {
           return quitWithError(`Not a dicom file ${bufferOrFile}`, callback);
         }
 
-        const el = readAElement(stream, useSyntax);
-        const metaLength = el.value;
-        const metaBuffer = Buffer.alloc(metaLength);
+        let el = readAElement(stream, useSyntax),
+          metaLength = el.value,
+          metaBuffer = Buffer.alloc(metaLength);
 
-        fs.read(fd, metaBuffer, 0, metaLength, 144, (err, bytesRead) => {
+        fs.read(fd, metaBuffer, 0, metaLength, 144, function (err, bytesRead) {
           fs.closeSync(fd);
-          if (err || bytesRead !== metaLength) {
+          if (err || bytesRead != metaLength) {
             return quitWithError(`Invalid a dicom file ${bufferOrFile}`, callback);
           }
 
@@ -349,9 +357,10 @@ DicomMessage.readMetaHeader = (bufferOrFile, callback) => {
   return null;
 };
 
-DicomMessage.read = (stream, type, syntax, options) => {
-  const pairs = {};
-  const useSyntax = type === C.DATA_TYPE_COMMAND ? C.IMPLICIT_LITTLE_ENDIAN : syntax;
+DicomMessage.read = function (stream, type, syntax, options) {
+  let elements = [],
+    pairs = {},
+    useSyntax = type == C.DATA_TYPE_COMMAND ? C.IMPLICIT_LITTLE_ENDIAN : syntax;
 
   stream.reset();
   while (!stream.end()) {
@@ -368,66 +377,56 @@ DicomMessage.read = (stream, type, syntax, options) => {
 
   let message = null;
 
-  if (type === C.DATA_TYPE_COMMAND) {
+  if (type == C.DATA_TYPE_COMMAND) {
     const cmdType = pairs[0x00000100].value;
 
     switch (cmdType) {
-    case 0x8020:
-      message = new CFindRSP(useSyntax);
-      break;
-    case 0x8021:
-      message = new CMoveRSP(useSyntax);
-      break;
-    case 0x8010:
-      message = new CGetRSP(useSyntax);
-      break;
-    case 0x0001:
-      message = new CStoreRQ(useSyntax);
-      break;
-    case 0x0020:
-      message = new CFindRQ(useSyntax);
-      break;
-    case 0x8001:
-      message = new CStoreRSP(useSyntax);
-      break;
+    case 0x8020 : message = new CFindRSP(useSyntax); break;
+    case 0x8021 : message = new CMoveRSP(useSyntax); break;
+    case 0x8010 : message = new CGetRSP(useSyntax); break;
+    case 0x0001 : message = new CStoreRQ(useSyntax); break;
+    case 0x0020 : message = new CFindRQ(useSyntax); break;
+    case 0x8001 : message = new CStoreRSP(useSyntax); break;
     default : throw new Error(`Unrecognized command type ${cmdType.toString(16)}`);
     }
 
     message.setElementPairs(pairs);
     message.setDataSetPresent(message.getValue(0x00000800));
     message.setContextId(message.getValue(0x00000002));
-    if (message.isResponse()) {
-      message.setReplyMessageId(message.getValue(0x00000120));
-    } else {
+    if (!message.isResponse()) {
       message.setMessageId(message.getValue(0x00000110));
+    } else {
+      message.setReplyMessageId(message.getValue(0x00000120));
     }
-  } else if (type === C.DATA_TYPE_DATA) {
+  } else if (type == C.DATA_TYPE_DATA) {
     message = new DataSetMessage(useSyntax);
     message.setElementPairs(pairs);
   } else {
-    throw new Error('Unrecognized message type');
+    throw 'Unrecognized message type';
   }
 
   return message;
 };
 
-const DataSetMessage = (syntax) => {
+const DataSetMessage = function (syntax) {
   DicomMessage.call(this, syntax);
   this.type = C.DATA_TYPE_DATA;
 };
 
 util.inherits(DataSetMessage, DicomMessage);
 
-DataSetMessage.prototype.is = (type) => false;
+DataSetMessage.prototype.is = function (type) {
+  return false;
+};
 
-const FileMetaMessage = (syntax) => {
+const FileMetaMessage = function (syntax) {
   DicomMessage.call(this, syntax);
   this.type = null;
 };
 
 util.inherits(FileMetaMessage, DicomMessage);
 
-const CommandMessage = (syntax) => {
+const CommandMessage = function (syntax) {
   DicomMessage.call(this, syntax);
   this.type = C.DATA_TYPE_COMMAND;
   this.priority = C.PRIORITY_MEDIUM;
@@ -436,9 +435,11 @@ const CommandMessage = (syntax) => {
 
 util.inherits(CommandMessage, DicomMessage);
 
-CommandMessage.prototype.getFields = () => this.command(CommandMessage.super_.prototype.getFields.call(this));
+CommandMessage.prototype.getFields = function () {
+  return this.command(CommandMessage.super_.prototype.getFields.call(this));
+};
 
-const CommandResponse = (syntax) => {
+const CommandResponse = function (syntax) {
   DicomMessage.call(this, syntax);
   this.type = C.DATA_TYPE_COMMAND;
   this.dataSetPresent = true;
@@ -446,74 +447,96 @@ const CommandResponse = (syntax) => {
 
 util.inherits(CommandResponse, DicomMessage);
 
-CommandResponse.prototype.isResponse = () => true;
+CommandResponse.prototype.isResponse = function () {
+  return true;
+};
 
-CommandResponse.prototype.respondedTo = () => this.getValue(0x00000120);
+CommandResponse.prototype.respondedTo = function () {
+  return this.getValue(0x00000120);
+};
 
-CommandResponse.prototype.isFinal = () => this.success() || this.failure() || this.cancel();
+CommandResponse.prototype.isFinal = function () {
+  return this.success() || this.failure() || this.cancel();
+};
 
-CommandResponse.prototype.warning = () => {
+CommandResponse.prototype.warning = function () {
   const status = this.getStatus();
 
   return (status == 0x0001) || (status >> 12 == 0xb);
 };
 
-CommandResponse.prototype.success = () => this.getStatus() == 0x0000;
+CommandResponse.prototype.success = function () {
+  return this.getStatus() == 0x0000;
+};
 
-CommandResponse.prototype.failure = () => {
+CommandResponse.prototype.failure = function () {
   const status = this.getStatus();
 
   return (status >> 12 == 0xa) || (status >> 12 == 0xc) || (status >> 8 == 0x1);
 };
 
-CommandResponse.prototype.cancel = () => this.getStatus() == C.STATUS_CANCEL;
+CommandResponse.prototype.cancel = function () {
+  return this.getStatus() == C.STATUS_CANCEL;
+};
 
-CommandResponse.prototype.pending = () => {
+CommandResponse.prototype.pending = function () {
   const status = this.getStatus();
 
   return (status == 0xff00) || (status == 0xff01);
 };
 
-CommandResponse.prototype.getStatus = () => this.getValue(0x00000900);
+CommandResponse.prototype.getStatus = function () {
+  return this.getValue(0x00000900);
+};
 
-CommandResponse.prototype.setStatus = (status) => {
+CommandResponse.prototype.setStatus = function (status) {
   this.setElement(0x00000900, status);
 };
 
 // Following four methods only available to C-GET-RSP and C-MOVE-RSP
-CommandResponse.prototype.getNumOfRemainingSubOperations = () => this.getValue(0x00001020);
+CommandResponse.prototype.getNumOfRemainingSubOperations = function () {
+  return this.getValue(0x00001020);
+};
 
-CommandResponse.prototype.getNumOfCompletedSubOperations = () => this.getValue(0x00001021);
+CommandResponse.prototype.getNumOfCompletedSubOperations = function () {
+  return this.getValue(0x00001021);
+};
 
-CommandResponse.prototype.getNumOfFailedSubOperations = () => this.getValue(0x00001022);
+CommandResponse.prototype.getNumOfFailedSubOperations = function () {
+  return this.getValue(0x00001022);
+};
 
-CommandResponse.prototype.getNumOfWarningSubOperations = () => this.getValue(0x00001023);
+CommandResponse.prototype.getNumOfWarningSubOperations = function () {
+  return this.getValue(0x00001023);
+};
 // End
 
-CommandResponse.prototype.getFields = () => this.response(CommandResponse.super_.prototype.getFields.call(this));
+CommandResponse.prototype.getFields = function () {
+  return this.response(CommandResponse.super_.prototype.getFields.call(this));
+};
 
-const CFindRSP = (syntax) => {
+const CFindRSP = function (syntax) {
   CommandResponse.call(this, syntax);
   this.commandType = 0x8020;
 };
 
 util.inherits(CFindRSP, CommandResponse);
 
-const CGetRSP = (syntax) => {
+const CGetRSP = function (syntax) {
   CommandResponse.call(this, syntax);
   this.commandType = 0x8010;
 };
 
 util.inherits(CGetRSP, CommandResponse);
 
-const CMoveRSP = (syntax) => {
+const CMoveRSP = function (syntax) {
   CommandResponse.call(this, syntax);
   this.commandType = 0x8021;
 };
 
 util.inherits(CMoveRSP, CommandResponse);
 
-const CFindRQ = (syntax) => {
+const CFindRQ = function (syntax) {
   CommandMessage.call(this, syntax);
   this.commandType = 0x20;
   this.contextUID = C.SOP_STUDY_ROOT_FIND;
@@ -521,7 +544,7 @@ const CFindRQ = (syntax) => {
 
 util.inherits(CFindRQ, CommandMessage);
 
-const CCancelRQ = (syntax) => {
+const CCancelRQ = function (syntax) {
   CommandResponse.call(this, syntax);
   this.commandType = 0x0fff;
   this.contextUID = null;
@@ -530,7 +553,7 @@ const CCancelRQ = (syntax) => {
 
 util.inherits(CCancelRQ, CommandResponse);
 
-const CCancelMoveRQ = (syntax) => {
+const CCancelMoveRQ = function (syntax) {
   CommandResponse.call(this, syntax);
   this.commandType = 0x0fff;
   this.contextUID = null;
@@ -539,7 +562,7 @@ const CCancelMoveRQ = (syntax) => {
 
 util.inherits(CCancelMoveRQ, CommandResponse);
 
-const CMoveRQ = (syntax, destination) => {
+const CMoveRQ = function (syntax, destination) {
   CommandMessage.call(this, syntax);
   this.commandType = 0x21;
   this.contextUID = C.SOP_STUDY_ROOT_MOVE;
@@ -548,15 +571,15 @@ const CMoveRQ = (syntax, destination) => {
 
 util.inherits(CMoveRQ, CommandMessage);
 
-CMoveRQ.prototype.setStore = (cstr) => {
+CMoveRQ.prototype.setStore = function (cstr) {
   this.store = cstr;
 };
 
-CMoveRQ.prototype.setDestination = (dest) => {
+CMoveRQ.prototype.setDestination = function (dest) {
   this.setElement(0x00000600, dest);
 };
 
-const CGetRQ = (syntax) => {
+const CGetRQ = function (syntax) {
   CommandMessage.call(this, syntax);
   this.commandType = 0x10;
   this.contextUID = C.SOP_STUDY_ROOT_GET;
@@ -565,11 +588,11 @@ const CGetRQ = (syntax) => {
 
 util.inherits(CGetRQ, CommandMessage);
 
-CGetRQ.prototype.setStore = (cstr) => {
+CGetRQ.prototype.setStore = function (cstr) {
   this.store = cstr;
 };
 
-const CStoreRQ = (syntax) => {
+const CStoreRQ = function (syntax) {
   CommandMessage.call(this, syntax);
   this.commandType = 0x01;
   this.contextUID = C.SOP_STUDY_ROOT_GET;
@@ -577,21 +600,27 @@ const CStoreRQ = (syntax) => {
 
 util.inherits(CStoreRQ, CommandMessage);
 
-CStoreRQ.prototype.getOriginAETitle = () => this.getValue(0x00001030);
+CStoreRQ.prototype.getOriginAETitle = function () {
+  return this.getValue(0x00001030);
+};
 
-CStoreRQ.prototype.getMoveMessageId = () => this.getValue(0x00001031);
+CStoreRQ.prototype.getMoveMessageId = function () {
+  return this.getValue(0x00001031);
+};
 
-CStoreRQ.prototype.getAffectedSOPInstanceUID = () => this.getValue(0x00001000);
+CStoreRQ.prototype.getAffectedSOPInstanceUID = function () {
+  return this.getValue(0x00001000);
+};
 
-CStoreRQ.prototype.setAffectedSOPInstanceUID = (uid) => {
+CStoreRQ.prototype.setAffectedSOPInstanceUID = function (uid) {
   this.setElement(0x00001000, uid);
 };
 
-CStoreRQ.prototype.setAffectedSOPClassUID = (uid) => {
+CStoreRQ.prototype.setAffectedSOPClassUID = function (uid) {
   this.setElement(0x00000002, uid);
 };
 
-const CStoreRSP = (syntax) => {
+const CStoreRSP = function (syntax) {
   CommandResponse.call(this, syntax);
   this.commandType = 0x8001;
   this.contextUID = C.SOP_STUDY_ROOT_GET;
@@ -600,11 +629,13 @@ const CStoreRSP = (syntax) => {
 
 util.inherits(CStoreRSP, CommandResponse);
 
-CStoreRSP.prototype.setAffectedSOPInstanceUID = (uid) => {
+CStoreRSP.prototype.setAffectedSOPInstanceUID = function (uid) {
   this.setElement(0x00001000, uid);
 };
 
-CStoreRSP.prototype.getAffectedSOPInstanceUID = (uid) => this.getValue(0x00001000);
+CStoreRSP.prototype.getAffectedSOPInstanceUID = function (uid) {
+  return this.getValue(0x00001000);
+};
 
 export {
   DicomMessage,

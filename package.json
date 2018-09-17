@@ -17,7 +17,6 @@
   },
   "scripts": {
     "build": "npm run test && npm run version && npm run webpack",
-    "build:dev": "npm run test && npm run webpack:dev",
     "docs": "npm run docs:api && cd docs && gitbook install && gitbook serve",
     "docs:api": "npm run clean:apidocs && documentation build src/index.js -f md -o docs/api.md",
     "eslint": "eslint -c .eslintrc.js src",

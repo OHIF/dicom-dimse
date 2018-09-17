@@ -3,6 +3,7 @@ import { EventEmitter } from 'events';
 import C from './constants.js';
 import {
   PDU,
+  AssociateAC,
   AssociateRQ,
   ReleaseRQ,
   PDataTF,
@@ -25,11 +26,15 @@ import {
   CMoveRQ,
   CStoreRQ } from './Message.js';
 
-const time = () => Math.floor(Date.now() / 1000);
+function time () {
+  return Math.floor(Date.now() / 1000);
+}
 
-const getRandomInt = (min, max) => Math.floor(Math.random() * (max - min)) + min;
+function getRandomInt (min, max) {
+  return Math.floor(Math.random() * (max - min)) + min;
+}
 
-const Envelope = (command, dataset) => {
+const Envelope = function (command, dataset) {
   EventEmitter.call(this);
   this.command = command;
   this.dataset = dataset;
@@ -37,7 +42,7 @@ const Envelope = (command, dataset) => {
 
 util.inherits(Envelope, EventEmitter);
 
-const CSocket = (socket, options) => {
+const CSocket = function (socket, options) {
   EventEmitter.call(this);
   this.socket = socket;
   this.negotiatedContexts = {};
@@ -60,66 +65,68 @@ const CSocket = (socket, options) => {
   this.id = getRandomInt(1000, 9999);
   this.options = options;
 
-  this.socket.on('connect', () => {
+  const o = this;
+
+  this.socket.on('connect', function () {
     console.info('Connect');
-    this.ready();
+    o.ready();
   });
 
-  this.socket.on('data', (data) => {
-    this.received(data);
+  this.socket.on('data', function (data) {
+    o.received(data);
   });
 
-  this.socket.on('error', (socketError) => {
+  this.socket.on('error', function (socketError) {
     console.error('There was an error with DIMSE connection socket.');
     console.error(socketError.stack);
     console.trace();
 
-    this.emit('error', new Error('server-internal-error', socketError.message));
+    o.emit('error', new Error('server-internal-error', socketError.message));
   });
 
-  this.socket.on('timeout', (socketError) => {
+  this.socket.on('timeout', function (socketError) {
     console.error('The connection timed out. The server is not responding.');
     console.error(socketError.stack);
     console.trace();
 
-    this.emit('error', new Error('server-connection-error', socketError.message));
+    o.emit('error', new Error('server-connection-error', socketError.message));
   });
 
-  this.socket.on('close', () => {
-    if (this.intervalId) {
-      clearInterval(this.intervalId);
+  this.socket.on('close', function () {
+    if (o.intervalId) {
+      clearInterval(o.intervalId);
     }
 
-    this.connected = false;
+    o.connected = false;
     console.info('Connection closed');
-    this.emit('close');
+    o.emit('close');
   });
 
-  this.on('released', () => {
+  this.on('released', function () {
     this.released();
   });
 
-  this.on('aborted', (pdu) => {
+  this.on('aborted', function (pdu) {
     console.warn(`Association aborted with reason ${pdu.reason}`);
     this.released();
   });
 
-  this.on('message', (pdvs) => {
+  this.on('message', function (pdvs) {
     this.receivedMessage(pdvs);
   });
 };
 
 util.inherits(CSocket, EventEmitter);
 
-CSocket.prototype.setCallingAE = (ae) => {
+CSocket.prototype.setCallingAE = function (ae) {
   this.callingAe = ae;
 };
 
-CSocket.prototype.setCalledAe = (ae) => {
+CSocket.prototype.setCalledAe = function (ae) {
   this.calledAe = ae;
 };
 
-CSocket.prototype.associate = () => {
+CSocket.prototype.associate = function () {
   const associateRQ = new AssociateRQ();
 
   associateRQ.setCalledAETitle(this.calledAe);
@@ -128,11 +135,11 @@ CSocket.prototype.associate = () => {
 
   const contextItems = [];
 
-  this.presentationContexts.forEach((context) => {
-    const contextItem = new PresentationContextItem();
-    const syntaxes = [];
+  this.presentationContexts.forEach(function (context) {
+    let contextItem = new PresentationContextItem(),
+      syntaxes = [];
 
-    context.transferSyntaxes.forEach((transferSyntax) => {
+    context.transferSyntaxes.forEach(function (transferSyntax) {
       const transfer = new TransferSyntaxItem();
 
       transfer.setTransferSyntaxName(transferSyntax);
@@ -149,9 +156,9 @@ CSocket.prototype.associate = () => {
   });
   associateRQ.setPresentationContextItems(contextItems);
 
-  const maxLengthItem = new MaximumLengthItem();
-  const classUIDItem = new ImplementationClassUIDItem();
-  const versionItem = new ImplementationVersionNameItem();
+  let maxLengthItem = new MaximumLengthItem(),
+    classUIDItem = new ImplementationClassUIDItem(),
+    versionItem = new ImplementationVersionNameItem();
 
   classUIDItem.setImplementationClassUID(C.IMPLEM_UID);
   versionItem.setImplementationVersionName(C.IMPLEM_VERSION);
@@ -168,19 +175,19 @@ CSocket.prototype.associate = () => {
   this.send(associateRQ);
 };
 
-CSocket.prototype.getContext = (id) => {
-  for (const index in this.presentationContexts) {
-    const context = this.presentationContexts[index];
+CSocket.prototype.getContext = function (id) {
+  for (const k in this.presentationContexts) {
+    const ctx = this.presentationContexts[k];
 
-    if (id === context.id) {
-      return context;
+    if (id === ctx.id) {
+      return ctx;
     }
   }
 
   return null;
 };
 
-CSocket.prototype.getSyntax = (contextId) => {
+CSocket.prototype.getSyntax = function (contextId) {
   if (!this.negotiatedContexts[contextId]) {
     return null;
   }
@@ -188,19 +195,19 @@ CSocket.prototype.getSyntax = (contextId) => {
   return this.negotiatedContexts[contextId].transferSyntax;
 };
 
-CSocket.prototype.getContextByUID = (uid) => {
-  for (const index in this.negotiatedContexts) {
-    const context = this.negotiatedContexts[index];
+CSocket.prototype.getContextByUID = function (uid) {
+  for (const k in this.negotiatedContexts) {
+    const ctx = this.negotiatedContexts[k];
 
-    if (context.abstractSyntax === uid) {
-      return context;
+    if (ctx.abstractSyntax === uid) {
+      return ctx;
     }
   }
 
   return null;
 };
 
-CSocket.prototype.getContextId = (contextId) => {
+CSocket.prototype.getContextId = function (contextId) {
   if (!this.negotiatedContexts[contextId]) {
     return null;
   }
@@ -208,11 +215,11 @@ CSocket.prototype.getContextId = (contextId) => {
   return this.negotiatedContexts[contextId].id;
 };
 
-CSocket.prototype.setPresentationContexts = (uids) => {
-  const contexts = [];
-  let id = 0;
+CSocket.prototype.setPresentationContexts = function (uids) {
+  let contexts = [],
+    id = 0;
 
-  uids.forEach((uid) => {
+  uids.forEach(function (uid) {
     id++;
     if (typeof uid === 'string') {
       contexts.push({
@@ -231,13 +238,15 @@ CSocket.prototype.setPresentationContexts = (uids) => {
   this.presentationContexts = contexts;
 };
 
-CSocket.prototype.newMessageId = () => (++this.messageIdCounter) % 65536;
+CSocket.prototype.newMessageId = function () {
+  return (++this.messageIdCounter) % 65536;
+};
 
-CSocket.prototype.resetReceive = () => {
+CSocket.prototype.resetReceive = function () {
   this.receiving = this.receiveLength = null;
 };
 
-CSocket.prototype.send = (pdu, afterCbk) => {
+CSocket.prototype.send = function (pdu, afterCbk) {
   // Console.log('SEND PDU-TYPE: ', pdu.type);
   const toSend = pdu.buffer();
   // Console.log('send buffer', toSend.toString('hex'));
@@ -245,31 +254,33 @@ CSocket.prototype.send = (pdu, afterCbk) => {
   return this.socket.write(toSend, afterCbk ? afterCbk : null);
 };
 
-CSocket.prototype.release = () => {
+CSocket.prototype.release = function () {
   const releaseRQ = new ReleaseRQ();
 
   this.send(releaseRQ);
 };
 
-CSocket.prototype.released = () => {
+CSocket.prototype.released = function () {
   this.socket.end();
 };
 
-CSocket.prototype.ready = () => {
+CSocket.prototype.ready = function () {
   console.info('Connection established');
   this.connected = true;
   this.started = time();
 
+  const o = this;
+
   if (this.options.idle) {
-    this.intervalId = setInterval(() => {
-      this.checkIdle();
+    this.intervalId = setInterval(function () {
+      o.checkIdle();
     }, 3000);
   }
 };
 
-CSocket.prototype.checkIdle = () => {
-  const current = time();
-  const idl = this.options.idle;
+CSocket.prototype.checkIdle = function () {
+  let current = time(),
+    idl = this.options.idle;
 
   if (!this.lastReceived && (current - this.started >= idl)) {
     this.idleClose();
@@ -278,19 +289,19 @@ CSocket.prototype.checkIdle = () => {
   }
 };
 
-CSocket.prototype.idleClose = () => {
+CSocket.prototype.idleClose = function () {
   console.info('Exceed idle time, closing connection');
   this.release();
 };
 
-CSocket.prototype.received = (data) => {
+CSocket.prototype.received = function (data) {
   do {
     data = this.process(data);
   } while (data !== null);
   this.lastReceived = time();
 };
 
-CSocket.prototype.process = (data) => {
+CSocket.prototype.process = function (data) {
   if (this.receiving === null) {
     if (this.minRecv) {
       data = Buffer.concat([this.minRecv, data], this.minRecv.length + data.length);
@@ -304,10 +315,11 @@ CSocket.prototype.process = (data) => {
     }
 
     const stream = new ReadStream(data);
+    const type = stream.read(C.TYPE_UINT8);
 
     stream.increment(1);
-    const len = stream.read(C.TYPE_UINT32);
-    const cmp = data.length - 6;
+    let len = stream.read(C.TYPE_UINT32),
+      cmp = data.length - 6;
 
     if (len > cmp) {
       this.receiving = data;
@@ -329,8 +341,8 @@ CSocket.prototype.process = (data) => {
     }
   } else {
     console.info('Data received');
-    let newData = Buffer.concat([this.receiving, data], this.receiving.length + data.length);
-    const pduLength = newData.length - 6;
+    let newData = Buffer.concat([this.receiving, data], this.receiving.length + data.length),
+      pduLength = newData.length - 6;
 
     if (pduLength < this.receiveLength) {
       this.receiving = newData;
@@ -353,23 +365,24 @@ CSocket.prototype.process = (data) => {
   return null;
 };
 
-CSocket.prototype.interpret = (stream) => {
-  const pdatas = [];
-  const size = stream.size();
+CSocket.prototype.interpret = function (stream) {
+  let pdatas = [],
+    size = stream.size(),
+    o = this;
 
   while (stream.offset < size) {
     const pdu = PDU.createByStream(stream);
     // Console.log("Received PDU-TYPE " + PDU.typeToString(pdu.type));
 
     if (pdu.is(C.ITEM_TYPE_PDU_ASSOCIATE_AC)) {
-      pdu.presentationContextItems.forEach((ctx) => {
-        const requested = this.getContext(ctx.presentationContextID);
+      pdu.presentationContextItems.forEach(function (ctx) {
+        const requested = o.getContext(ctx.presentationContextID);
 
         if (!requested) {
-          throw new Error('Accepted presentation context not found');
+          throw 'Accepted presentation context not found';
         }
 
-        this.negotiatedContexts[ctx.presentationContextID] = {
+        o.negotiatedContexts[ctx.presentationContextID] = {
           id: ctx.presentationContextID,
           transferSyntax: ctx.transferSyntaxesItems[0].transferSyntaxName,
           abstractSyntax: requested.abstractSyntax
@@ -379,6 +392,12 @@ CSocket.prototype.interpret = (stream) => {
       // Console.log('Accepted');
       this.associated = true;
       this.emit('associated', pdu);
+    } else if (pdu.is(C.ITEM_TYPE_PDU_ASSOCIATE_RQ)) {
+      const accepd = new AssociateAC();
+
+      pdu.presentationContextItems.forEach(function (ctx) {
+
+      });
     } else if (pdu.is(C.ITEM_TYPE_PDU_RELEASE_RP)) {
       // Console.log('Released');
       this.associated = false;
@@ -394,17 +413,15 @@ CSocket.prototype.interpret = (stream) => {
   if (pdatas) {
     let pdvs = this.pendingPDVs ? this.pendingPDVs : [];
 
-    pdatas.forEach((pdata) => {
+    pdatas.forEach(function (pdata) {
       pdvs = pdvs.concat(pdata.presentationDataValueItems);
     });
     this.pendingPDVs = null;
-    let i = 0;
-    const count = pdvs.length;
+    let i = 0,
+      count = pdvs.length;
 
     while (i < count) {
-      if (pdvs[i].isLast) {
-        this.emit('message', pdvs[i++]);
-      } else {
+      if (!pdvs[i].isLast) {
         let j = i + 1;
 
         while (j < count) {
@@ -422,12 +439,14 @@ CSocket.prototype.interpret = (stream) => {
         }
 
         i = j;
+      } else {
+        this.emit('message', pdvs[i++]);
       }
     }
   }
 };
 
-CSocket.prototype.receivedMessage = (pdv) => {
+CSocket.prototype.receivedMessage = function (pdv) {
   const syntax = this.getSyntax(pdv.contextId);
   const msg = DicomMessage.read(pdv.messageStream, pdv.type, syntax, this.options.vr);
 
@@ -473,9 +492,9 @@ CSocket.prototype.receivedMessage = (pdv) => {
 
   } else {
     if (!this.lastCommand) {
-      throw new Error('Only dataset?');
+      throw 'Only dataset?';
     } else if (!this.lastCommand.haveData()) {
-      throw new Error('Last command didn\'t indicate presence of data');
+      throw 'Last command didn\'t indicate presence of data';
     }
 
     if (this.lastCommand.isResponse()) {
@@ -491,19 +510,19 @@ CSocket.prototype.receivedMessage = (pdv) => {
         }
       }
     } else if (this.lastCommand.is(C.COMMAND_C_STORE_RQ)) {
-      const moveMessageId = this.lastCommand.getMoveMessageId();
-      let useId = moveMessageId;
+      let moveMessageId = this.lastCommand.getMoveMessageId(),
+        useId = moveMessageId;
 
-      if (moveMessageId) {
+      if (!moveMessageId) {
+        // !! Going to deprecate now
+        // Kinda hacky but we know this c-store is came from a c-get
+        if (this.lastGets.length > 0) {
+          useId = this.lastGets[0];
+        } else {
+          throw 'Where does this c-store came from?';
+        }
+      } else{
         console.info('move ', moveMessageId);
-      }
-
-      // !! Going to deprecate now
-      // Kinda hacky but we know this c-store is came from a c-get
-      if (this.lastGets.length > 0) {
-        useId = this.lastGets[0];
-      } else {
-        throw new Error('Where does this c-store came from?');
       }
 
       // This.storeResponse(useId, msg);
@@ -511,12 +530,12 @@ CSocket.prototype.receivedMessage = (pdv) => {
   }
 };
 
-CSocket.prototype.wrapToPData = (message, context) => {
+CSocket.prototype.wrapToPData = function (message, context) {
   const useContext = message.contextUID ? message.contextUID : context;
   const ctx = this.getContextByUID(useContext);
 
-  const pdata = new PDataTF();
-  const pdv = new PresentationDataValueItem(ctx.id);
+  let pdata = new PDataTF(),
+    pdv = new PresentationDataValueItem(ctx.id);
 
   pdv.setMessage(message);
   pdata.setPresentationDataValueItems([pdv]);
@@ -524,16 +543,18 @@ CSocket.prototype.wrapToPData = (message, context) => {
   return pdata;
 };
 
-CSocket.prototype.sendMessage = (context, command, dataset) => {
-  const nContext = this.getContextByUID(context);
-  const syntax = nContext.transferSyntax;
-  const cid = nContext.id;
-  const messageId = this.newMessageId();
-  const msgData = {};
+CSocket.prototype.sendMessage = function (context, command, dataset) {
+  let nContext = this.getContextByUID(context),
+    syntax = nContext.transferSyntax,
+    cid = nContext.id,
+    messageId = this.newMessageId(),
+    msgData = {};
 
   msgData.listener = new Envelope(command);
 
-  msgData.listener.on('cancel', () => {
+  const o = this;
+
+  msgData.listener.on('cancel', function () {
     let cancelMessage = null;
 
     if (this.command.is(C.COMMAND_C_FIND_RQ) || this.command.is(C.COMMAND_C_MOVE_RQ)) {
@@ -542,7 +563,7 @@ CSocket.prototype.sendMessage = (context, command, dataset) => {
       cancelMessage.setReplyMessageId(this.command.messageId);
       cancelMessage.setSyntax(C.IMPLICIT_LITTLE_ENDIAN);
 
-      this.send(this.wrapToPData(cancelMessage, this.command.contextUID));
+      o.send(o.wrapToPData(cancelMessage, this.command.contextUID));
     }
   });
 
@@ -566,8 +587,8 @@ CSocket.prototype.sendMessage = (context, command, dataset) => {
   this.send(pdata);
   if (dataset && typeof dataset === 'object') {
     dataset.setSyntax(syntax);
-    const dsData = new PDataTF();
-    const dPdv = new PresentationDataValueItem(cid);
+    let dsData = new PDataTF(),
+      dPdv = new PresentationDataValueItem(cid);
 
     dPdv.setMessage(dataset);
     dsData.setPresentationDataValueItems([dPdv]);
@@ -577,7 +598,7 @@ CSocket.prototype.sendMessage = (context, command, dataset) => {
   return msgData.listener;
 };
 
-CSocket.prototype.sendPData = (pdv, after) => {
+CSocket.prototype.sendPData = function (pdv, after) {
   const pdata = new PDataTF();
 
   pdata.setPresentationDataValueItems([pdv]);
@@ -586,15 +607,15 @@ CSocket.prototype.sendPData = (pdv, after) => {
   this.send(pdata, after);
 };
 
-CSocket.prototype.verify = () => {
+CSocket.prototype.verify = function () {
   this.setPresentationContexts([C.SOP_VERIFICATION]);
-  this.startAssociationRequest(() => {
+  this.startAssociationRequest(function () {
     // Associated, we can release now
     this.release();
   });
 };
 
-CSocket.prototype.wrapMessage = (data) => {
+CSocket.prototype.wrapMessage = function (data) {
   if (data) {
     const datasetMessage = new DataSetMessage();
 
@@ -607,9 +628,11 @@ CSocket.prototype.wrapMessage = (data) => {
 
 };
 
-CSocket.prototype.find = (params, options) => this.sendMessage(options.context, new CFindRQ(), this.wrapMessage(params));
+CSocket.prototype.find = function (params, options) {
+  return this.sendMessage(options.context, new CFindRQ(), this.wrapMessage(params));
+};
 
-CSocket.prototype.move = (destination, params, options) => {
+CSocket.prototype.move = function (destination, params, options) {
   const moveMessage = new CMoveRQ();
 
   moveMessage.setDestination(destination);
@@ -617,7 +640,7 @@ CSocket.prototype.move = (destination, params, options) => {
   return this.sendMessage(options.context, moveMessage, this.wrapMessage(params));
 };
 
-CSocket.prototype.storeInstance = (sopClassUID, sopInstanceUID, options) => {
+CSocket.prototype.storeInstance = function (sopClassUID, sopInstanceUID, options) {
   const storeMessage = new CStoreRQ();
 
   storeMessage.setAffectedSOPInstanceUID(sopInstanceUID);
@@ -626,7 +649,7 @@ CSocket.prototype.storeInstance = (sopClassUID, sopInstanceUID, options) => {
   return this.sendMessage(sopClassUID, storeMessage, true);
 };
 
-CSocket.prototype.moveInstances = (destination, params, options) => {
+CSocket.prototype.moveInstances = function (destination, params, options) {
   const sendParams = Object.assign({
     0x00080052: C.QUERY_RETRIEVE_LEVEL_IMAGE
   }, params);
@@ -638,7 +661,7 @@ CSocket.prototype.moveInstances = (destination, params, options) => {
   return this.move(destination, sendParams, options);
 };
 
-CSocket.prototype.findPatients = (params, options) => {
+CSocket.prototype.findPatients = function (params, options) {
   const sendParams = Object.assign({
     0x00080052: C.QUERY_RETRIEVE_LEVEL_PATIENT,
     0x00100010: '',
@@ -654,7 +677,7 @@ CSocket.prototype.findPatients = (params, options) => {
   return this.find(sendParams, options);
 };
 
-CSocket.prototype.findStudies = (params, options) => {
+CSocket.prototype.findStudies = function (params, options) {
   const sendParams = Object.assign({
     0x00080052: C.QUERY_RETRIEVE_LEVEL_STUDY,
     0x00080020: '',
@@ -670,7 +693,7 @@ CSocket.prototype.findStudies = (params, options) => {
   return this.find(sendParams, options);
 };
 
-CSocket.prototype.findSeries = (params, options) => {
+CSocket.prototype.findSeries = function (params, options) {
   const sendParams = Object.assign({
     0x00080052: C.QUERY_RETRIEVE_LEVEL_SERIES,
     0x00080020: '',
@@ -686,7 +709,7 @@ CSocket.prototype.findSeries = (params, options) => {
   return this.find(sendParams, options);
 };
 
-CSocket.prototype.findInstances = (params, options) => {
+CSocket.prototype.findInstances = function (params, options) {
   const sendParams = Object.assign({
     0x00080052: C.QUERY_RETRIEVE_LEVEL_IMAGE,
     0x00080020: '',
