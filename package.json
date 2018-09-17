@@ -1,6 +1,6 @@
 {
   "name": "dimse",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "DICOM Services: DIMSE C-Service functions",
   "keywords": [
     "DICOM",
